@@ -5,9 +5,13 @@ require("dotenv").config();
 const app = express();
 const routes = require("./routes/router.js");
 
-app.use(express.json());
+const corsOptions = {
+	origin: "*",
+};
 
-app.use(cors());
+app.use(cors(corsOptions));
+
+app.use(express.json());
 
 mongoose
 	.connect(process.env.MONGODB_URI)
