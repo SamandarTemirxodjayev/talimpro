@@ -87,6 +87,13 @@ exports.getSchools = async (req, res) => {
 		return res.status(500).json({message: error});
 	}
 };
+exports.getSchoolsByRegions = async(req, res) => {
+	try {
+		
+	} catch (error) {
+		
+	}
+}
 exports.getSchoolsById = async (req, res) => {
 	try {
 		const {id} = req.params;
