@@ -12,4 +12,5 @@ router.patch("/school", middleware, controller.getSchoolsByRegions);
 router.get("/school/:id", middleware, controller.getSchoolsById);
 router.delete("/school/:id", middleware, controller.deleteSchool);
 router.put("/school/:id", middleware, controller.updateSchool);
+
 module.exports = router;

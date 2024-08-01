@@ -63,7 +63,7 @@ exports.createSchool = async (req, res) => {
 	try {
 		const newSchool = await Schools.create(req.body);
 		newSchool.login = `s${newSchool.school_id}`;
-		let hashedCode = await createHash(newSchool.login.toString());
+		const hashedCode = await createHash(`s${newSchool.school_id}`);
 		newSchool.password = hashedCode;
 		await newSchool.save();
 		return res.status(200).json({
@@ -71,8 +71,8 @@ exports.createSchool = async (req, res) => {
 			data: newSchool,
 		});
 	} catch (error) {
-		console.log(error);
-		return res.status(500).json({message: error});
+		console.error("Error creating school:", error);
+		return res.status(500).json({message: error.message});
 	}
 };
 exports.getSchools = async (req, res) => {
@@ -87,13 +87,24 @@ exports.getSchools = async (req, res) => {
 		return res.status(500).json({message: error});
 	}
 };
-exports.getSchoolsByRegions = async(req, res) => {
+exports.getSchoolsByRegions = async (req, res) => {
 	try {
-		
+		const schools = await Schools.find({
+			region: req.body.region,
+		});
+		return res.status(200).json({
+			status: "success",
+			data: schools,
+		});
 	} catch (error) {
-		
+		console.error("Error fetching school by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
 	}
-}
+};
 exports.getSchoolsById = async (req, res) => {
 	try {
 		const {id} = req.params;
