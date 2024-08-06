@@ -24,6 +24,14 @@ exports.login = async (req, res) => {
 			});
 		}
 
+		const currentDate = new Date();
+		if (!school.tarif || school.tarif < currentDate) {
+			return res.status(400).json({
+				status: "error",
+				error: "Subscription expired or missing",
+			});
+		}
+
 		const token = createToken(school._id);
 		return res.status(200).json({
 			status: "success",
