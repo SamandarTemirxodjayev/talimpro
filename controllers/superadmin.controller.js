@@ -227,3 +227,21 @@ exports.updateSchool = async (req, res) => {
 		});
 	}
 };
+exports.giveSchoolPermission = async (req, res) => {
+	try {
+		const school = await Schools.findById(req.params.id);
+		school.tarif = new Date(req.body.tarif);
+		await school.save();
+		return res.status(200).json({
+			status: "success",
+			data: school,
+		});
+	} catch (error) {
+		console.error("Error updating school by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
