@@ -12,6 +12,13 @@ router.patch("/school", middleware, controller.getSchoolsByRegions);
 router.get("/school/:id", middleware, controller.getSchoolsById);
 router.delete("/school/:id", middleware, controller.deleteSchool);
 router.put("/school/:id", middleware, controller.updateSchool);
-router.post("/school/permission/:id", middleware, controller.giveSchoolPermission)
+router.post(
+	"/school/permission/:id",
+	middleware,
+	controller.giveSchoolPermission,
+);
+router.get("/teachers", middleware, controller.getAllTeachers);
+router.get("/pupils", middleware, controller.getAllPupils);
+router.post("/tests", middleware, controller.createTest);
 
 module.exports = router;

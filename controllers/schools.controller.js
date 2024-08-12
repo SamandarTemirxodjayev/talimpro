@@ -120,7 +120,7 @@ exports.getTeachers = async (req, res) => {
 	try {
 		const teachers = await Teachers.find({
 			school: req.school._id,
-		});
+		}).populate("school");
 		return res.status(200).json({
 			status: "success",
 			data: teachers,
@@ -329,6 +329,25 @@ exports.createPupil = async (req, res) => {
 		return res.status(200).json({
 			status: "success",
 			data: pupil,
+		});
+	} catch (error) {
+		console.error("Error during login:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+		});
+	}
+};
+exports.getAllPupils = async (req, res) => {
+	try {
+		const pupils = await Pupils.find({
+			school: req.school._id,
+		})
+			.populate("class")
+			.populate("school");
+		return res.status(200).json({
+			status: "success",
+			data: pupils,
 		});
 	} catch (error) {
 		console.error("Error during login:", error);

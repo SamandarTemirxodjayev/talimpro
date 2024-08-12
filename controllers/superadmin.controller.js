@@ -1,5 +1,8 @@
+const Pupils = require("../models/Pupils");
 const Schools = require("../models/Schools");
 const Superadmins = require("../models/Superadmins");
+const Teachers = require("../models/Teachers");
+const Test = require("../models/Test");
 const {createHash, compare} = require("../utils/codeHash");
 const {createToken} = require("../utils/token");
 const mongoose = require("mongoose");
@@ -235,6 +238,55 @@ exports.giveSchoolPermission = async (req, res) => {
 		return res.status(200).json({
 			status: "success",
 			data: school,
+		});
+	} catch (error) {
+		console.error("Error updating school by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
+exports.getAllTeachers = async (req, res) => {
+	try {
+		const teachers = await Teachers.find().populate("school");
+		return res.status(200).json({
+			status: "success",
+			data: teachers,
+		});
+	} catch (error) {
+		console.error("Error updating school by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
+exports.getAllPupils = async (req, res) => {
+	try {
+		const pupils = await Pupils.find().populate("school").populate("class");
+		return res.status(200).json({
+			status: "success",
+			data: pupils,
+		});
+	} catch (error) {
+		console.error("Error updating school by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
+exports.createTest = async (req, res) => {
+	try {
+		const test = await Test.create(req.body);
+		await test.save();
+		return res.status(200).json({
+			status: "success",
+			data: test,
 		});
 	} catch (error) {
 		console.error("Error updating school by ID:", error);
