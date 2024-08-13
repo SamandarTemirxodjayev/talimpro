@@ -278,6 +278,9 @@ exports.getClassById = async (req, res) => {
 exports.deleteClass = async (req, res) => {
 	try {
 		await Classes.findByIdAndDelete(req.params.id);
+		await Pupils.deleteMany({
+			class: new mongoose.Types.ObjectId(req.params.id),
+		});
 		return res.status(200).json({
 			status: "success",
 			data: null,
@@ -322,10 +325,12 @@ exports.createPupil = async (req, res) => {
 		const pupil = await Pupils.create(req.body);
 		pupil.school = req.school._id;
 		pupil.class = Class._id;
+		Class.pupils++;
 		pupil.login = `p${pupil.pupil_id}`;
 		const hashedCode = await createHash(`p${pupil.pupil_id}`);
 		pupil.password = hashedCode;
 		await pupil.save();
+		await Class.save();
 		return res.status(200).json({
 			status: "success",
 			data: pupil,
@@ -379,7 +384,10 @@ exports.getPupils = async (req, res) => {
 };
 exports.deletePupil = async (req, res) => {
 	try {
-		await Pupils.findByIdAndDelete(req.params.id);
+		const pupil = await Pupils.findByIdAndDelete(req.params.id);
+		const Class = await Classes.findById(pupil.class);
+		Class.pupils--;
+		await Class.save();
 		return res.status(200).json({
 			status: "success",
 			data: null,

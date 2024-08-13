@@ -14,6 +14,10 @@ const classesSchema = new Schema({
 		type: String,
 		required: true,
 	},
+	pupils: {
+		type: Number,
+		default: 0,
+	},
 });
 
 classesSchema.set("timestamps", true);

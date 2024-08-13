@@ -1,8 +1,11 @@
+const Parts = require("../models/Parts");
 const Pupils = require("../models/Pupils");
 const Schools = require("../models/Schools");
+const Subjects = require("../models/Subjects");
 const Superadmins = require("../models/Superadmins");
 const Teachers = require("../models/Teachers");
 const Test = require("../models/Test");
+const Themes = require("../models/Themes");
 const {createHash, compare} = require("../utils/codeHash");
 const {createToken} = require("../utils/token");
 const mongoose = require("mongoose");
@@ -287,6 +290,295 @@ exports.createTest = async (req, res) => {
 		return res.status(200).json({
 			status: "success",
 			data: test,
+		});
+	} catch (error) {
+		console.error("Error updating school by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
+exports.createSubject = async (req, res) => {
+	try {
+		const subject = await Subjects.create(req.body);
+		await subject.save();
+		return res.status(200).json({
+			status: "success",
+			data: subject,
+		});
+	} catch (error) {
+		console.error("Error updating school by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
+exports.getAllSubjects = async (req, res) => {
+	try {
+		const subjects = await Subjects.find();
+		return res.status(200).json({
+			status: "success",
+			data: subjects,
+		});
+	} catch (error) {
+		console.error("Error updating school by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
+exports.updateSubjectById = async (req, res) => {
+	try {
+		const subject = await Subjects.findByIdAndUpdate(req.params.id, req.body, {
+			new: true,
+		});
+		if (!subject) {
+			return res.status(500).json({
+				status: "error",
+				message: "Subject does not exist",
+				error: null,
+			});
+		}
+		return res.status(200).json({
+			status: "success",
+			data: subject,
+		});
+	} catch (error) {
+		console.error("Error updating school by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
+exports.deleteSubjectById = async (req, res) => {
+	try {
+		const subject = await Subjects.findByIdAndDelete(req.params.id);
+		if (!subject) {
+			return res.status(500).json({
+				status: "error",
+				message: "Subject does not exist",
+				error: null,
+			});
+		}
+		return res.status(200).json({
+			status: "success",
+			data: subject,
+		});
+	} catch (error) {
+		console.error("Error updating school by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
+exports.createPart = async (req, res) => {
+	try {
+		const part = await Parts.create(req.body);
+		await part.save();
+		return res.status(200).json({
+			status: "success",
+			data: part,
+		});
+	} catch (error) {
+		console.error("Error updating school by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
+exports.getAllParts = async (req, res) => {
+	try {
+		const parts = await Parts.find().populate("subject");
+		return res.status(200).json({
+			status: "success",
+			data: parts,
+		});
+	} catch (error) {
+		console.error("Error updating school by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
+exports.getPartsBySubjectId = async (req, res) => {
+	try {
+		const parts = await Parts.find({
+			subject: new mongoose.Types.ObjectId(req.params.id),
+		}).populate("subject");
+		return res.status(200).json({
+			status: "success",
+			data: parts,
+		});
+	} catch (error) {
+		console.error("Error updating school by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
+exports.updatePartById = async (req, res) => {
+	try {
+		const part = await Parts.findByIdAndUpdate(req.params.id, req.body, {
+			new: true,
+		});
+		if (!part) {
+			return res.status(500).json({
+				status: "error",
+				message: "Part does not exist",
+				error: null,
+			});
+		}
+		return res.status(200).json({
+			status: "success",
+			data: part,
+		});
+	} catch (error) {
+		console.error("Error updating school by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
+exports.deletePartById = async (req, res) => {
+	try {
+		const part = await Parts.findByIdAndDelete(req.params.id);
+		if (!part) {
+			return res.status(500).json({
+				status: "error",
+				message: "Subject does not exist",
+				error: null,
+			});
+		}
+		return res.status(200).json({
+			status: "success",
+			data: part,
+		});
+	} catch (error) {
+		console.error("Error updating school by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
+exports.createTheme = async (req, res) => {
+	try {
+		const theme = await Themes.create(req.body);
+		await theme.save();
+		return res.status(200).json({
+			status: "success",
+			data: theme,
+		});
+	} catch (error) {
+		console.error("Error updating school by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
+exports.getAllThemes = async (req, res) => {
+	try {
+		const themes = await Themes.find()
+			.populate("part")
+			.populate({
+				path: "part",
+				populate: [{path: "subject"}],
+			});
+		return res.status(200).json({
+			status: "success",
+			data: themes,
+		});
+	} catch (error) {
+		console.error("Error updating school by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
+exports.getThemesByPartId = async (req, res) => {
+	try {
+		const themes = await Themes.find({
+			part: new mongoose.Types.ObjectId(req.params.id),
+		})
+			.populate("part")
+			.populate({
+				path: "part",
+				populate: [{path: "subject"}],
+			});
+		return res.status(200).json({
+			status: "success",
+			data: themes,
+		});
+	} catch (error) {
+		console.error("Error updating school by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
+exports.updateThemeById = async (req, res) => {
+	try {
+		const theme = await Themes.findByIdAndUpdate(req.params.id, req.body, {
+			new: true,
+		});
+		if (!theme) {
+			return res.status(500).json({
+				status: "error",
+				message: "theme does not exist",
+				error: null,
+			});
+		}
+		return res.status(200).json({
+			status: "success",
+			data: theme,
+		});
+	} catch (error) {
+		console.error("Error updating school by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
+exports.deleteThemeById = async (req, res) => {
+	try {
+		const theme = await Themes.findByIdAndDelete(req.params.id);
+		if (!theme) {
+			return res.status(500).json({
+				status: "error",
+				message: "Subject does not exist",
+				error: null,
+			});
+		}
+		return res.status(200).json({
+			status: "success",
+			data: theme,
 		});
 	} catch (error) {
 		console.error("Error updating school by ID:", error);
