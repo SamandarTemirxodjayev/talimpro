@@ -1,51 +1,66 @@
 const mongoose = require("mongoose");
 const AutoIncrement = require("mongoose-sequence")(require("mongoose"));
 
-// Define the schema for answer options
-const optionSchema = new mongoose.Schema({
-	text: {
-		type: String,
-		required: true,
-	},
-	isCorrect: {
-		type: Boolean,
-		required: true,
-		default: false,
-	},
-});
-
-// Define the schema for questions
-const questionSchema = new mongoose.Schema({
-	questionText: {
-		type: String,
-		required: true,
-	},
-	options: {
-		type: [optionSchema], // Array of optionSchema
-		required: true,
-	},
-	questionType: {
-		type: String,
-		enum: ["single", "multiple"], // 'single' for single correct answer, 'multiple' for multiple correct answers
-		required: true,
-	},
-	explanation: {
-		type: String, // Optional field for explanation of the answer
-	},
-	createdAt: {
-		type: Date,
-		default: Date.now,
-	},
-});
-
-// Define the schema for tests
 const testSchema = new mongoose.Schema({
+	subject: {
+		type: mongoose.Types.ObjectId,
+		required: true,
+		ref: "subjects",
+	},
+	part: {
+		type: mongoose.Types.ObjectId,
+		ref: "parts",
+	},
 	theme: {
+		type: mongoose.Types.ObjectId,
+		ref: "themes",
+	},
+	banner_photo: {
 		type: String,
 		required: true,
+	},
+	type: {
+		type: String,
+		enum: ["teacher", "pupils"],
+		required: true,
+	},
+	pupil_class: {
+		type: Number,
+		default: 0,
+	},
+	duration: {
+		type: Number,
+		default: 120,
+	},
+	questions_count: {
+		type: Number,
+		default: 30,
 	},
 	questions: {
-		type: [questionSchema], // Array of questionSchema
+		type: [
+			{
+				question_text: {
+					type: String,
+					required: true,
+				},
+				options: {
+					type: [
+						{
+							text: {
+								type: String,
+								required: true,
+							},
+							is_correct: {
+								type: Boolean,
+								required: true,
+								default: false,
+							},
+						},
+					],
+					required: true,
+				},
+			},
+		],
 		required: true,
 	},
 });
@@ -56,7 +71,6 @@ testSchema.plugin(AutoIncrement, {
 });
 testSchema.set("timestamps", true);
 
-// Create the Test model
 const Test = mongoose.model("Test", testSchema);
 
 module.exports = Test;

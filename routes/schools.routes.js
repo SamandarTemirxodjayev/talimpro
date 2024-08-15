@@ -24,10 +24,11 @@ router.delete("/class/:id", middleware, controller.deleteClass);
 router.put("/class/:id", middleware, controller.updateClass);
 
 router.post("/pupil", middleware, controller.createPupil);
-router.get("/pupil", middleware, controller.getAllPupils)
+router.get("/pupil", middleware, controller.getAllPupils);
 router.get("/pupil/:id", middleware, controller.getPupils);
 router.delete("/pupil/:id", middleware, controller.deletePupil);
 router.put("/pupil/:id", middleware, controller.updatePupil);
+router.patch("/pupil/:id", middleware, controller.getPupilById);
 router.post(
 	"/pupil/update-password/:id",
 	middleware,

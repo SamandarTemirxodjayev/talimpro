@@ -6,6 +6,8 @@ const router = Router();
 
 router.post("/", controller.createAdmin);
 router.post("/login", controller.login);
+router.post("/default", middleware, controller.setDefaultDatas);
+router.get("/default", middleware, controller.getDefaultDatas);
 
 router.post("/school", middleware, controller.createSchool);
 router.get("/school", middleware, controller.getSchools);
@@ -27,18 +29,22 @@ router.post("/tests", middleware, controller.createTest);
 
 router.post("/tests/subject", middleware, controller.createSubject);
 router.get("/tests/subjects", middleware, controller.getAllSubjects);
+router.get("/tests/subject/:id", middleware, controller.getSubjectById);
 router.put("/tests/subject/:id", middleware, controller.updateSubjectById);
 router.delete("/tests/subject/:id", middleware, controller.deleteSubjectById);
 
 router.post("/tests/part", middleware, controller.createPart);
 router.get("/tests/parts", middleware, controller.getAllParts);
+router.get("/tests/part/:id", middleware, controller.getPartById);
 router.get("/tests/parts/:id", middleware, controller.getPartsBySubjectId);
 router.put("/tests/part/:id", middleware, controller.updatePartById);
 router.delete("/tests/part/:id", middleware, controller.deletePartById);
 
 router.post("/tests/theme", middleware, controller.createTheme);
 router.get("/tests/themes", middleware, controller.getAllThemes);
+router.get("/tests/theme/:id", middleware, controller.getThemeById);
 router.get("/tests/themes/:id", middleware, controller.getThemesByPartId);
 router.put("/tests/theme/:id", middleware, controller.updateThemeById);
 router.delete("/tests/theme/:id", middleware, controller.deleteThemeById);
+
 module.exports = router;

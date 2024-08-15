@@ -204,6 +204,17 @@ exports.updateTeacher = async (req, res) => {
 };
 exports.createClass = async (req, res) => {
 	try {
+		const Class = await Classes.findOne({
+			school: req.school._id,
+			number: req.body.number,
+			letter: req.body.letter,
+		});
+		if (Class) {
+			return res.status(400).json({
+				status: "error",
+				message: "Class already exists",
+			});
+		}
 		const newClass = await Classes.create({
 			school: req.school._id,
 			number: req.body.number,
@@ -405,6 +416,29 @@ exports.updatePupil = async (req, res) => {
 		const pupil = await Pupils.findByIdAndUpdate(req.params.id, req.body, {
 			new: true,
 		});
+		if (!pupil) {
+			return res.status(400).json({
+				message: "Pupil not found",
+				data: null,
+			});
+		}
+		return res.status(200).json({
+			status: "success",
+			data: pupil,
+		});
+	} catch (error) {
+		console.error("Error during login:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+		});
+	}
+};
+exports.getPupilById = async (req, res) => {
+	try {
+		const pupil = await Pupils.findById(req.params.id)
+			.populate("school")
+			.populate("class");
 		if (!pupil) {
 			return res.status(400).json({
 				message: "Pupil not found",

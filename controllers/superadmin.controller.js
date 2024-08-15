@@ -9,6 +9,7 @@ const Themes = require("../models/Themes");
 const {createHash, compare} = require("../utils/codeHash");
 const {createToken} = require("../utils/token");
 const mongoose = require("mongoose");
+const fs = require("fs");
 
 exports.createAdmin = async (req, res) => {
 	try {
@@ -333,6 +334,44 @@ exports.getAllSubjects = async (req, res) => {
 		});
 	}
 };
+exports.getSubjectById = async (req, res) => {
+	try {
+		const {id} = req.params;
+
+		let query = {};
+		if (mongoose.Types.ObjectId.isValid(id)) {
+			query = {_id: id};
+		} else if (!isNaN(id)) {
+			query = {subject_id: id};
+		} else {
+			return res.status(400).json({
+				status: "fail",
+				message: "Invalid ID format",
+			});
+		}
+
+		const subject = await Subjects.findOne(query);
+
+		if (!subject) {
+			return res.status(404).json({
+				status: "fail",
+				message: "subject not found",
+			});
+		}
+
+		return res.status(200).json({
+			status: "success",
+			data: subject,
+		});
+	} catch (error) {
+		console.error("Error updating subject by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
 exports.updateSubjectById = async (req, res) => {
 	try {
 		const subject = await Subjects.findByIdAndUpdate(req.params.id, req.body, {
@@ -407,6 +446,44 @@ exports.getAllParts = async (req, res) => {
 		});
 	} catch (error) {
 		console.error("Error updating school by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
+exports.getPartById = async (req, res) => {
+	try {
+		const {id} = req.params;
+
+		let query = {};
+		if (mongoose.Types.ObjectId.isValid(id)) {
+			query = {_id: id};
+		} else if (!isNaN(id)) {
+			query = {part_id: id};
+		} else {
+			return res.status(400).json({
+				status: "fail",
+				message: "Invalid ID format",
+			});
+		}
+
+		const part = await Parts.findOne(query);
+
+		if (!part) {
+			return res.status(404).json({
+				status: "fail",
+				message: "part not found",
+			});
+		}
+
+		return res.status(200).json({
+			status: "success",
+			data: part,
+		});
+	} catch (error) {
+		console.error("Error updating subject by ID:", error);
 		return res.status(500).json({
 			status: "error",
 			message: "Internal Server Error",
@@ -518,6 +595,44 @@ exports.getAllThemes = async (req, res) => {
 		});
 	}
 };
+exports.getThemeById = async (req, res) => {
+	try {
+		const {id} = req.params;
+
+		let query = {};
+		if (mongoose.Types.ObjectId.isValid(id)) {
+			query = {_id: id};
+		} else if (!isNaN(id)) {
+			query = {theme_id: id};
+		} else {
+			return res.status(400).json({
+				status: "fail",
+				message: "Invalid ID format",
+			});
+		}
+
+		const theme = await Themes.findOne(query);
+
+		if (!theme) {
+			return res.status(404).json({
+				status: "fail",
+				message: "theme not found",
+			});
+		}
+
+		return res.status(200).json({
+			status: "success",
+			data: theme,
+		});
+	} catch (error) {
+		console.error("Error updating subject by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
 exports.getThemesByPartId = async (req, res) => {
 	try {
 		const themes = await Themes.find({
@@ -579,6 +694,55 @@ exports.deleteThemeById = async (req, res) => {
 		return res.status(200).json({
 			status: "success",
 			data: theme,
+		});
+	} catch (error) {
+		console.error("Error updating school by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
+exports.setDefaultDatas = async (req, res) => {
+	try {
+		const default_datas = req.body;
+		fs.writeFile(
+			"./database/default.json",
+			JSON.stringify(default_datas, null, 2),
+			(writeErr) => {
+				if (writeErr) {
+					console.error(writeErr);
+					return res.status(500).json({error: "Failed to write file"});
+				}
+
+				return res.json({
+					data: default_datas,
+					status: "success",
+				});
+			},
+		);
+	} catch (error) {
+		console.error("Error updating school by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
+exports.getDefaultDatas = async (req, res) => {
+	try {
+		fs.readFile("./database/default.json", "utf8", (err, data) => {
+			if (err) {
+				console.error(err);
+				return res.status(500).json({error: "Failed to read file"});
+			}
+			const file = JSON.parse(data);
+			return res.json({
+				data: file,
+				status: "success",
+			});
 		});
 	} catch (error) {
 		console.error("Error updating school by ID:", error);
