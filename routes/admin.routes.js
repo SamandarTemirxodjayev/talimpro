@@ -6,6 +6,7 @@ const router = Router();
 
 router.post("/", controller.createAdmin);
 router.post("/login", controller.login);
+router.get("/me", middleware, controller.getMe);
 router.post("/default", middleware, controller.setDefaultDatas);
 router.get("/default", middleware, controller.getDefaultDatas);
 

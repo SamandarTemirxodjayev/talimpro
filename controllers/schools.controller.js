@@ -48,6 +48,20 @@ exports.login = async (req, res) => {
 		});
 	}
 };
+exports.getMe = async (req, res) => {
+	try {
+		const {password, ...result} = req.school._doc
+		return res.json({
+			data: result
+		});
+	} catch (error) {
+		console.error("Error during login:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+		});
+	}
+};
 exports.resetPassword = async (req, res) => {
 	try {
 		const isPasswordValid = await compare(req.body.old, req.school.password);

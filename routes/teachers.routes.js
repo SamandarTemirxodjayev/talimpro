@@ -5,6 +5,7 @@ const middleware = require("../middlewares/teachers.middleware.js");
 const router = Router();
 
 router.post("/login", controller.login);
+router.get("/me", middleware, controller.getMe);
 router.get("/tests", middleware, controller.getTests);
 router.get("/test/:id", middleware, controller.getTestById);
 router.get("/tests/start/:id", middleware, controller.startTest);

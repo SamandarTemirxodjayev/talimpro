@@ -50,6 +50,20 @@ exports.login = async (req, res) => {
 		});
 	}
 };
+exports.getMe = async (req, res) => {
+	try {
+		const {password, ...result} = req.teacher._doc
+		return res.json({
+			data: result
+		})
+	} catch (error) {
+		console.error("Error during login:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+		});
+	}
+}
 exports.getTests = async (req, res) => {
 	try {
 		const tests = await Test.find(

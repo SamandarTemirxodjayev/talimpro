@@ -67,6 +67,17 @@ exports.login = async (req, res) => {
 		return res.status(500).json({message: error});
 	}
 };
+exports.getMe = async (req, res) => {
+	try {
+		const {password, ...result} = req.userId._doc
+		return res.json({
+			data: result
+		});
+	} catch (error) {
+		console.log(error)
+		return res.status(500).json({message: error});
+	}
+}
 exports.createSchool = async (req, res) => {
 	try {
 		const newSchool = await Schools.create(req.body);
