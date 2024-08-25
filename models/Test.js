@@ -21,7 +21,7 @@ const testSchema = new mongoose.Schema({
 	},
 	type: {
 		type: String,
-		enum: ["teacher", "pupils"],
+		enum: ["teacher", "pupils", "user"],
 		required: true,
 	},
 	pupil_class: {

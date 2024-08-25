@@ -6,5 +6,8 @@ const router = Router();
 
 router.post("/login", controller.login);
 router.get("/tests", middleware, controller.getTests);
+router.get("/test/:id", middleware, controller.getTestById);
+router.get("/tests/start/:id", middleware, controller.startTest);
+router.get("/active-tests", middleware, controller.getActiveTests);
 
 module.exports = router;

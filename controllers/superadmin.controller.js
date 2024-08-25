@@ -10,6 +10,7 @@ const {createHash, compare} = require("../utils/codeHash");
 const {createToken} = require("../utils/token");
 const mongoose = require("mongoose");
 const fs = require("fs");
+const TestTypes = require("../models/TestTypes");
 
 exports.createAdmin = async (req, res) => {
 	try {
@@ -694,6 +695,175 @@ exports.deleteThemeById = async (req, res) => {
 		return res.status(200).json({
 			status: "success",
 			data: theme,
+		});
+	} catch (error) {
+		console.error("Error updating school by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
+exports.setDefaultDatas = async (req, res) => {
+	try {
+		const default_datas = req.body;
+		fs.writeFile(
+			"./database/default.json",
+			JSON.stringify(default_datas, null, 2),
+			(writeErr) => {
+				if (writeErr) {
+					console.error(writeErr);
+					return res.status(500).json({error: "Failed to write file"});
+				}
+
+				return res.json({
+					data: default_datas,
+					status: "success",
+				});
+			},
+		);
+	} catch (error) {
+		console.error("Error updating school by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
+exports.getDefaultDatas = async (req, res) => {
+	try {
+		fs.readFile("./database/default.json", "utf8", (err, data) => {
+			if (err) {
+				console.error(err);
+				return res.status(500).json({error: "Failed to read file"});
+			}
+			const file = JSON.parse(data);
+			return res.json({
+				data: file,
+				status: "success",
+			});
+		});
+	} catch (error) {
+		console.error("Error updating school by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
+exports.createType = async (req, res) => {
+	try {
+		const testtype = await TestTypes.create(req.body);
+		await testtype.save();
+		return res.status(200).json({
+			status: "success",
+			data: testtype,
+		});
+	} catch (error) {
+		console.error("Error updating school by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
+exports.getAllTypes = async (req, res) => {
+	try {
+		const testTypes = await TestTypes.find()
+		return res.status(200).json({
+			status: "success",
+			data: testTypes,
+		});
+	} catch (error) {
+		console.error("Error updating school by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
+exports.getTypeById = async (req, res) => {
+	try {
+		const {id} = req.params;
+
+		let query = {};
+		if (mongoose.Types.ObjectId.isValid(id)) {
+			query = {_id: id};
+		} else if (!isNaN(id)) {
+			query = {testtypes_id: id};
+		} else {
+			return res.status(400).json({
+				status: "fail",
+				message: "Invalid ID format",
+			});
+		}
+
+		const testtypes_id = await TestTypes.findOne(query);
+
+		if (!testtypes_id) {
+			return res.status(404).json({
+				status: "fail",
+				message: "testtypes not found",
+			});
+		}
+
+		return res.status(200).json({
+			status: "success",
+			data: testtypes_id,
+		});
+	} catch (error) {
+		console.error("Error updating subject by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
+
+exports.updateTypeById = async (req, res) => {
+	try {
+		const testtype = await TestTypes.findByIdAndUpdate(req.params.id, req.body, {
+			new: true,
+		});
+		if (!testtype) {
+			return res.status(500).json({
+				status: "error",
+				message: "testtype does not exist",
+				error: null,
+			});
+		}
+		return res.status(200).json({
+			status: "success",
+			data: testtype,
+		});
+	} catch (error) {
+		console.error("Error updating school by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
+exports.deleteTypeById = async (req, res) => {
+	try {
+		const testtype = await TestTypes.findByIdAndDelete(req.params.id);
+		if (!testtype) {
+			return res.status(500).json({
+				status: "error",
+				message: "TestTypes does not exist",
+				error: null,
+			});
+		}
+		return res.status(200).json({
+			status: "success",
+			data: testtype,
 		});
 	} catch (error) {
 		console.error("Error updating school by ID:", error);
