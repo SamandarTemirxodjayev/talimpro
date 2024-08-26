@@ -30,7 +30,6 @@ router.get("/pupils/:id", middleware, controller.getPupils);
 router.get("/pupil/:id", middleware, controller.getPupilById);
 router.delete("/pupil/:id", middleware, controller.deletePupil);
 router.put("/pupil/:id", middleware, controller.updatePupil);
-router.patch("/pupil/:id", middleware, controller.getPupilById);
 router.post(
 	"/pupil/update-password/:id",
 	middleware,

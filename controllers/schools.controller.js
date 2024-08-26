@@ -485,29 +485,6 @@ exports.updatePupil = async (req, res) => {
 		});
 	}
 };
-exports.getPupilById = async (req, res) => {
-	try {
-		const pupil = await Pupils.findById(req.params.id)
-			.populate("school")
-			.populate("class");
-		if (!pupil) {
-			return res.status(400).json({
-				message: "Pupil not found",
-				data: null,
-			});
-		}
-		return res.status(200).json({
-			status: "success",
-			data: pupil,
-		});
-	} catch (error) {
-		console.error("Error during login:", error);
-		return res.status(500).json({
-			status: "error",
-			message: "Internal Server Error",
-		});
-	}
-};
 exports.updatePupilPassword = async (req, res) => {
 	try {
 		const hashedCode = await createHash(req.body.password);
