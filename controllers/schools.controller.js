@@ -407,6 +407,43 @@ exports.getPupils = async (req, res) => {
 		});
 	}
 };
+exports.getPupilById = async (req, res) => {
+	try {
+		const {id} = req.params;
+
+		let query = {};
+		if (mongoose.Types.ObjectId.isValid(id)) {
+			query = {_id: id, school: req.school._id};
+		} else if (!isNaN(id)) {
+			query = {pupil_id: id, school: req.school._id};
+		} else {
+			return res.status(400).json({
+				status: "fail",
+				message: "Invalid ID format",
+			});
+		}
+
+		const pupil = await Pupils.findOne(query).populate("school").populate("class");
+
+		if (!pupil) {
+			return res.status(404).json({
+				status: "fail",
+				message: "pupil not found",
+			});
+		}
+		const {password, ...result} = pupil;
+		return res.json({
+			status: "success",
+			data: result,
+		});
+	} catch (error) {
+		console.error("Error during login:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+		});
+	}
+}
 exports.deletePupil = async (req, res) => {
 	try {
 		const pupil = await Pupils.findByIdAndDelete(req.params.id);
