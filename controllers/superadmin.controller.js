@@ -234,7 +234,7 @@ exports.updateSchool = async (req, res) => {
 exports.giveSchoolPermission = async (req, res) => {
 	try {
 		const school = await Schools.findById(req.params.id);
-		school.tarif = Date(req.body.tarif);
+		school.tarif = req.body.tarif;
 		await school.save();
 		return res.status(200).json({
 			status: "success",
