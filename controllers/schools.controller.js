@@ -283,7 +283,7 @@ exports.deleteClass = async (req, res) => {
 	try {
 		await Classes.findByIdAndDelete(req.params.id);
 		await Pupils.deleteMany({
-			class: req.params.id,
+			class: parseInt(req.params.id),
 		});
 		return res.status(200).json({
 			status: "success",
