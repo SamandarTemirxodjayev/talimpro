@@ -3,11 +3,11 @@ const AutoIncrement = require("mongoose-sequence")(require("mongoose"));
 
 const pupulsSchema = new Schema({
 	school: {
-		type: Types.ObjectId,
+		type: Number,
 		ref: "schools",
 	},
 	class: {
-		type: Types.ObjectId,
+		type: Number,
 		ref: "classes",
 	},
 	name: {
