@@ -27,7 +27,7 @@ async function UserMiddleware(req, res, next) {
 
 	try {
 		const decoded = jwt.verify(accessToken, "Samandar0321@02212006H193OC");
-		const teacher = await Teachers.findById(decoded);
+		const teacher = await Teachers.findById(decoded).populate("school");
 		if (!teacher) {
 			return res
 				.status(401)
