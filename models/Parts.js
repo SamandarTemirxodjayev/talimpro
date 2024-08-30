@@ -1,7 +1,10 @@
-const {Schema, model, Types} = require("mongoose");
-const AutoIncrement = require("mongoose-sequence")(require("mongoose"));
+const { Schema, model, Types } = require("mongoose");
+const { AutoIncrement } = require("../utils/helpers");
 
 const partsSchema = new Schema({
+	_id: {
+		type: Number,
+	},
 	name_uz: {
 		type: String,
 		required: true,
@@ -15,17 +18,19 @@ const partsSchema = new Schema({
 		required: true,
 	},
 	subject: {
-		type: Types.ObjectId,
+		type: Number,
 		required: true,
 		ref: "subjects",
-	},
+	}, 
+	createdAt: {
+		type: Number,
+		default: Date.now()
+	}
+}, {
+	versionKey: false
 });
 
-partsSchema.set("timestamps", true);
-partsSchema.plugin(AutoIncrement, {
-	inc_field: "part_id",
-	start_seq: 1,
-});
+partsSchema.plugin(AutoIncrement, { modelName: 'part', fieldName: '_id' })
 
 const Parts = model("parts", partsSchema);
 

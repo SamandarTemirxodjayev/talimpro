@@ -1,7 +1,10 @@
-const {Schema, model, Types} = require("mongoose");
-const AutoIncrement = require("mongoose-sequence")(require("mongoose"));
+const {Schema, model} = require("mongoose");
+const { AutoIncrement } = require("../utils/helpers");
 
 const testTypesSchema = new Schema({
+	_id: {
+		type: Number,
+	},
 	title_uz: {
 		type: String,
 		required: true,
@@ -22,15 +25,16 @@ const testTypesSchema = new Schema({
   photo_url: {
     type: String,
     required: true,
-  }
+  },
+	createdAt: {
+		type: Number,
+		default: Date.now()
+	}
+}, {
+	versionKey: false
 });
 
-testTypesSchema.set("timestamps", true);
-testTypesSchema.plugin(AutoIncrement, {
-	inc_field: "testtypes_id",
-	start_seq: 1,
-});
-
+testTypesSchema.plugin(AutoIncrement, { modelName: 'testtypes', fieldName: '_id' })
 const TestTypes = model("testtypes", testTypesSchema);
 
 module.exports = TestTypes;

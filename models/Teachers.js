@@ -1,10 +1,14 @@
 const {Schema, model, Types} = require("mongoose");
-const AutoIncrement = require("mongoose-sequence")(require("mongoose"));
+const { AutoIncrement } = require("../utils/helpers");
+
 
 const teachersSchema = new Schema({
+	_id: {
+		type: Number,
+	},
 	school: {
-		type: Types.ObjectId,
-		ref: "schools",
+		type: Number,
+		ref: "schools"
 	},
 	name: {
 		type: String,
@@ -27,13 +31,14 @@ const teachersSchema = new Schema({
 	password: {
 		type: String,
 	},
+	createdAt: {
+		type: Number,
+		default: Date.now()
+	}
+}, {
+	versionKey: false
 });
-
-teachersSchema.set("timestamps", true);
-teachersSchema.plugin(AutoIncrement, {
-	inc_field: "teacher_id",
-	start_seq: 1000,
-});
+teachersSchema.plugin(AutoIncrement, { modelName: 'teachers', fieldName: '_id', startAt: 1000 });
 
 const Teachers = model("teachers", teachersSchema);
 

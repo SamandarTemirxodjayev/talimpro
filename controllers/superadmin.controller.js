@@ -7,7 +7,7 @@ const Teachers = require("../models/Teachers");
 const Test = require("../models/Test");
 const Themes = require("../models/Themes");
 const {createHash, compare} = require("../utils/codeHash");
-const {createToken} = require("../utils/token");
+const {createToken, generateHashedToken} = require("../utils/token");
 const mongoose = require("mongoose");
 const fs = require("fs");
 const TestTypes = require("../models/TestTypes");
@@ -53,14 +53,13 @@ exports.login = async (req, res) => {
 			});
 		}
 		const token = createToken(admin._id);
+		const cdnToken = generateHashedToken(admin._id);
 		return res.json({
-			message: "Confirmed",
 			status: "success",
 			data: {
+				cdn_token: cdnToken,
 				auth_token: token,
 				token_type: "bearer",
-				createdAt: new Date(),
-				expiredAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
 			},
 		});
 	} catch (error) {
@@ -81,8 +80,8 @@ exports.getMe = async (req, res) => {
 exports.createSchool = async (req, res) => {
 	try {
 		const newSchool = await Schools.create(req.body);
-		newSchool.login = `s${newSchool.school_id}`;
-		const hashedCode = await createHash(`s${newSchool.school_id}`);
+		newSchool.login = `s${newSchool._id}`;
+		const hashedCode = await createHash(`s${newSchool._id}`);
 		newSchool.password = hashedCode;
 		await newSchool.save();
 		return res.status(200).json({
@@ -126,21 +125,7 @@ exports.getSchoolsByRegions = async (req, res) => {
 };
 exports.getSchoolsById = async (req, res) => {
 	try {
-		const {id} = req.params;
-
-		let query = {};
-		if (mongoose.Types.ObjectId.isValid(id)) {
-			query = {_id: id};
-		} else if (!isNaN(id)) {
-			query = {school_id: id};
-		} else {
-			return res.status(400).json({
-				status: "fail",
-				message: "Invalid ID format",
-			});
-		}
-
-		const school = await Schools.findOne(query);
+		const school = await Schools.findById(req.params.id);
 
 		if (!school) {
 			return res.status(404).json({
@@ -249,7 +234,7 @@ exports.updateSchool = async (req, res) => {
 exports.giveSchoolPermission = async (req, res) => {
 	try {
 		const school = await Schools.findById(req.params.id);
-		school.tarif = new Date(req.body.tarif);
+		school.tarif = Date(req.body.tarif);
 		await school.save();
 		return res.status(200).json({
 			status: "success",
@@ -348,21 +333,7 @@ exports.getAllSubjects = async (req, res) => {
 };
 exports.getSubjectById = async (req, res) => {
 	try {
-		const {id} = req.params;
-
-		let query = {};
-		if (mongoose.Types.ObjectId.isValid(id)) {
-			query = {_id: id};
-		} else if (!isNaN(id)) {
-			query = {subject_id: id};
-		} else {
-			return res.status(400).json({
-				status: "fail",
-				message: "Invalid ID format",
-			});
-		}
-
-		const subject = await Subjects.findOne(query);
+		const subject = await Subjects.findById(req.params.id);
 
 		if (!subject) {
 			return res.status(404).json({
@@ -467,21 +438,8 @@ exports.getAllParts = async (req, res) => {
 };
 exports.getPartById = async (req, res) => {
 	try {
-		const {id} = req.params;
 
-		let query = {};
-		if (mongoose.Types.ObjectId.isValid(id)) {
-			query = {_id: id};
-		} else if (!isNaN(id)) {
-			query = {part_id: id};
-		} else {
-			return res.status(400).json({
-				status: "fail",
-				message: "Invalid ID format",
-			});
-		}
-
-		const part = await Parts.findOne(query);
+		const part = await Parts.findById(req.params.id);
 
 		if (!part) {
 			return res.status(404).json({
@@ -495,7 +453,7 @@ exports.getPartById = async (req, res) => {
 			data: part,
 		});
 	} catch (error) {
-		console.error("Error updating subject by ID:", error);
+		console.error("Error updating part by ID:", error);
 		return res.status(500).json({
 			status: "error",
 			message: "Internal Server Error",
@@ -506,7 +464,7 @@ exports.getPartById = async (req, res) => {
 exports.getPartsBySubjectId = async (req, res) => {
 	try {
 		const parts = await Parts.find({
-			subject: new mongoose.Types.ObjectId(req.params.id),
+			subject: req.params.id,
 		}).populate("subject");
 		return res.status(200).json({
 			status: "success",
@@ -609,21 +567,11 @@ exports.getAllThemes = async (req, res) => {
 };
 exports.getThemeById = async (req, res) => {
 	try {
-		const {id} = req.params;
-
-		let query = {};
-		if (mongoose.Types.ObjectId.isValid(id)) {
-			query = {_id: id};
-		} else if (!isNaN(id)) {
-			query = {theme_id: id};
-		} else {
-			return res.status(400).json({
-				status: "fail",
-				message: "Invalid ID format",
-			});
-		}
-
-		const theme = await Themes.findOne(query);
+		const theme = await Themes.findById(req.params.id).populate("part")
+		.populate({
+			path: "part",
+			populate: [{path: "subject"}],
+		});
 
 		if (!theme) {
 			return res.status(404).json({
@@ -648,7 +596,7 @@ exports.getThemeById = async (req, res) => {
 exports.getThemesByPartId = async (req, res) => {
 	try {
 		const themes = await Themes.find({
-			part: new mongoose.Types.ObjectId(req.params.id),
+			part: req.params.id,
 		})
 			.populate("part")
 			.populate({
@@ -800,21 +748,7 @@ exports.getAllTypes = async (req, res) => {
 };
 exports.getTypeById = async (req, res) => {
 	try {
-		const {id} = req.params;
-
-		let query = {};
-		if (mongoose.Types.ObjectId.isValid(id)) {
-			query = {_id: id};
-		} else if (!isNaN(id)) {
-			query = {testtypes_id: id};
-		} else {
-			return res.status(400).json({
-				status: "fail",
-				message: "Invalid ID format",
-			});
-		}
-
-		const testtypes_id = await TestTypes.findOne(query);
+		const testtypes_id = await TestTypes.findById(req.params.id);
 
 		if (!testtypes_id) {
 			return res.status(404).json({

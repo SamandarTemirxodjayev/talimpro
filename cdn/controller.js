@@ -2,6 +2,7 @@ const {v1: uuidv4} = require("uuid");
 const path = require("path");
 const multer = require("multer");
 const Files = require("./models/Files");
+const { default: mongoose } = require("mongoose");
 
 exports.index = async (req, res) => {
 	res.json({message: "Storage", version: "1.0.0"});
@@ -13,7 +14,7 @@ exports.upload = async (req, res) => {
 		const storage = multer.diskStorage({
 			destination: publicFolderPath,
 			filename: (req, file, cb) => {
-				const fileId = uuidv4();
+				const fileId = new mongoose.Types.ObjectId();
 				const fileExtension = path.extname(file.originalname);
 				const fileName = `${fileId}${fileExtension}`;
 				cb(null, fileName);
@@ -31,18 +32,19 @@ exports.upload = async (req, res) => {
 				return res.status(400).json({message: "No file provided"});
 			}
 
-			const fileName = req.file.filename;
-			const fileId = path.basename(
+			const file_name = req.file.filename;
+			const file_id = path.basename(
 				req.file.filename,
 				path.extname(req.file.filename),
 			); // Get the newly generated filename
 
-			const fileUrl = `https://cdn.talimpro.uz/${fileName}`;
+			const file_url = `https://cdn.talimpro.uz/${file_name}`;
 
 			const files = await Files.create({
-				fileName,
-				fileId,
-				fileUrl,
+				file_name,
+				file_id,
+				file_url,
+				admin_id: req.admin._id,
 			});
 			await files.save();
 

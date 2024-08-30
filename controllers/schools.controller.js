@@ -24,7 +24,7 @@ exports.login = async (req, res) => {
 			});
 		}
 
-		const currentDate = new Date();
+		const currentDate = Date().now;
 		if (!school.tarif || school.tarif < currentDate) {
 			return res.status(400).json({
 				status: "error",
@@ -114,8 +114,8 @@ exports.createTeacher = async (req, res) => {
 	try {
 		const teacher = await Teachers.create(req.body);
 		teacher.school = req.school._id;
-		teacher.login = `t${teacher.teacher_id}`;
-		const hashedCode = await createHash(`t${teacher.teacher_id}`);
+		teacher.login = `t${teacher._id}`;
+		const hashedCode = await createHash(`t${teacher._id}`);
 		teacher.password = hashedCode;
 		await teacher.save();
 		return res.status(200).json({
@@ -149,21 +149,7 @@ exports.getTeachers = async (req, res) => {
 };
 exports.getTeacherById = async (req, res) => {
 	try {
-		const {id} = req.params;
-
-		let query = {};
-		if (mongoose.Types.ObjectId.isValid(id)) {
-			query = {_id: id};
-		} else if (!isNaN(id)) {
-			query = {teacher_id: id};
-		} else {
-			return res.status(400).json({
-				status: "fail",
-				message: "Invalid ID format",
-			});
-		}
-
-		const teacher = await Teachers.findOne(query);
+		const teacher = await Teachers.findById(req.params.id).populate("school");
 
 		if (!teacher) {
 			return res.status(404).json({
@@ -172,9 +158,16 @@ exports.getTeacherById = async (req, res) => {
 			});
 		}
 
+		let {password, ...result} = teacher._doc;
+
+		if (result.school) {
+      let { password, ...schoolWithoutPassword } = result.school._doc;
+      result.school = schoolWithoutPassword; // Assign the school object without password back to the result
+    }
+
 		return res.status(200).json({
 			status: "success",
-			data: teacher,
+			data: result,
 		});
 	} catch (error) {
 		console.error("Error during login:", error);
@@ -266,21 +259,7 @@ exports.getClasses = async (req, res) => {
 };
 exports.getClassById = async (req, res) => {
 	try {
-		const {id} = req.params;
-
-		let query = {};
-		if (mongoose.Types.ObjectId.isValid(id)) {
-			query = {_id: id, school: req.school._id};
-		} else if (!isNaN(id)) {
-			query = {class_id: id, school: req.school._id};
-		} else {
-			return res.status(400).json({
-				status: "fail",
-				message: "Invalid ID format",
-			});
-		}
-
-		const Class = await Classes.findOne(query).populate("school");
+		const Class = await Classes.findById(req.params.id).populate("school");
 
 		if (!Class) {
 			return res.status(404).json({
@@ -350,9 +329,9 @@ exports.createPupil = async (req, res) => {
 		const pupil = await Pupils.create(req.body);
 		pupil.school = req.school._id;
 		pupil.class = Class._id;
-		Class.pupils++;
-		pupil.login = `p${pupil.pupil_id}`;
-		const hashedCode = await createHash(`p${pupil.pupil_id}`);
+		Class.pupils++; 
+		pupil.login = `p${pupil._id}`;
+		const hashedCode = await createHash(`p${pupil._id}`);
 		pupil.password = hashedCode;
 		await pupil.save();
 		await Class.save();

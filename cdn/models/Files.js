@@ -1,25 +1,34 @@
 const mongoose = require("mongoose");
-const AutoIncrement = require("mongoose-sequence")(mongoose);
+const { AutoIncrement } = require("../../utils/helpers");
 
 const filesSchema = new mongoose.Schema({
-	user: {
+	_id: {
+		type: Number,
+	},
+	file_name: {
 		type: String,
 	},
-	fileName: {
+	file_id: {
+		type: mongoose.Types.ObjectId,
+	},
+	file_url: {
 		type: String,
 	},
-	fileId: {
-		type: String,
+	admin_id: {
+		type: Number,
+		ref: "admins"
 	},
-	fileUrl: {
-		type: String,
+	createdAt: {
+		type: Number,
 	},
+	updatedAt: {
+		type: Number,
+	}
+},{
+  versionKey: false
 });
 filesSchema.set("timestamps", true);
-filesSchema.plugin(AutoIncrement, {
-	inc_field: "file_id",
-	start_seq: 1,
-});
+filesSchema.plugin(AutoIncrement, { modelName: 'file', fieldName: '_id' });
 
 
 const Files = mongoose.model("files", filesSchema);
