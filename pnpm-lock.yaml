@@ -26,6 +26,9 @@ importers:
       jsonwebtoken:
         specifier: ^9.0.2
         version: 9.0.2
+      lockfile:
+        specifier: ^1.0.4
+        version: 1.0.4
       mongoose:
         specifier: ^8.5.1
         version: 8.5.1
@@ -234,9 +237,6 @@ packages:
     resolution: {integrity: sha512-5T6nhjsT+EOMzuck8JjBHARTHfMht0POzlA60WV2pMD3gyXw2LZnZ+ueGdNxG+0calOJcWKbpFcuzLZ91YWq9Q==}
     engines: {node: '>= 0.10.0'}
 
-  faker@6.6.6:
-    resolution: {integrity: sha512-9tCqYEDHI5RYFQigXFwF1hnCwcWCOJl/hmll0lr5D2Ljjb0o4wphb69wikeJDz5qCEzXCoPvG6ss5SDP6IfOdg==}
-
   finalhandler@1.2.0:
     resolution: {integrity: sha512-5uXcUVftlQMFnWC9qu/svkWv3GTd2PfUhK/3PLkYNAe7FbqJMt3515HaxE6eRL74GdsriiwujiawdaB1BpEISg==}
     engines: {node: '>= 0.8'}
@@ -336,6 +336,9 @@ packages:
   kareem@2.6.3:
     resolution: {integrity: sha512-C3iHfuGUXK2u8/ipq9LfjFfXFxAZMQJJq7vLS45r3D9Y2xQ/m4S8zaR4zMLFWh9AsNPXmcFfUDhTEO8UIC/V6Q==}
     engines: {node: '>=12.0.0'}
+
+  lockfile@1.0.4:
+    resolution: {integrity: sha512-cvbTwETRfsFh4nHsL1eGWapU1XFi5Ot9E85sWAwia7Y7EgB7vfqcZhTKZ+l7hCGxSPoushMv5GKhT5PdLv03WA==}
 
   lodash.includes@4.3.0:
     resolution: {integrity: sha512-W3Bx6mdkRTGtlJISOvVD/lbqjTlPPUDTMnlXZFnVwi9NKJ6tiAk6LVdlhZMm17VZisqhKcgzpO5Wz91PCt5b0w==}
@@ -733,7 +736,6 @@ snapshots:
       cors: 2.8.5
       dotenv: 16.4.5
       express: 4.19.2
-      faker: 6.6.6
       jsonwebtoken: 9.0.2
       mongoose: 8.5.1
       mongoose-sequence: 6.0.1(mongoose@8.5.1)
@@ -941,8 +943,6 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  faker@6.6.6: {}
-
   finalhandler@1.2.0:
     dependencies:
       debug: 2.6.9
@@ -1071,6 +1071,10 @@ snapshots:
       safe-buffer: 5.2.1
 
   kareem@2.6.3: {}
+
+  lockfile@1.0.4:
+    dependencies:
+      signal-exit: 3.0.7
 
   lodash.includes@4.3.0: {}
 

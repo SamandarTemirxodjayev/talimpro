@@ -1,101 +1,114 @@
-const fs = require('fs');
+const fs = require("node:fs/promises");
+const path = require("node:path");
+const lockfile = require("lockfile");
 
-exports. updateOrAddObject = (filePath, newObj)=> {
-  // Read the JSON file
-  fs.readFile(filePath, 'utf8', (err, data) => {
-    let jsonArray = [];
+const lockPath = path.join(__dirname, "file.lock");
+console.log(lockPath); // Path for the lock file
 
-    if (err) {
-      if (err.code === 'ENOENT') {
-        // File does not exist, initialize an empty array
-        console.log('File not found, creating new file...');
-        jsonArray = [];
-      } else {
-        console.error('Error reading file:', err);
-        return;
-      }
-    } else {
-      try {
-        // If the file is not empty, parse the data
-        if (data) {
-          jsonArray = JSON.parse(data);
+// Function to acquire a lock
+const acquireLock = async () => {
+	return new Promise((resolve, reject) => {
+		lockfile.lock(lockPath, {retries: 10, retryWait: 100}, (err) => {
+			if (err) reject(err);
+			else resolve();
+		});
+	});
+};
 
-          // Ensure it's an array, if not throw an error
-          if (!Array.isArray(jsonArray)) {
-            throw new Error("JSON file does not contain an array.");
-          }
-        }
-      } catch (parseError) {
-        console.error('Error parsing JSON:', parseError);
-        return;
-      }
-    }
+// Function to release the lock
+const releaseLock = async () => {
+	return new Promise((resolve, reject) => {
+		lockfile.unlock(lockPath, (err) => {
+			if (err) reject(err);
+			else resolve();
+		});
+	});
+};
 
-    // Find if the object with the same key (e.g., phone) exists
-    let index = jsonArray.findIndex(obj => obj.phone === newObj.phone);
+exports.updateOrAddObject = async (filePath, newObj) => {
+	try {
+		await acquireLock();
 
-    if (index !== -1) {
-      // Object exists, update its value
-      jsonArray[index] = { ...jsonArray[index], ...newObj };
-      console.log(`Updated object at index ${index}`);
-    } else {
-      // Object doesn't exist, add it to the array
-      jsonArray.push(newObj);
-      console.log('Added new object');
-    }
+		let jsonArray = [];
+		try {
+			const data = await fs.readFile(filePath, "utf8");
+			if (data) {
+				jsonArray = JSON.parse(data);
+				if (!Array.isArray(jsonArray)) {
+					throw new Error("JSON file does not contain an array.");
+				}
+			}
+		} catch (err) {
+			if (err.code === "ENOENT") {
+				jsonArray = []; // Initialize if file does not exist
+			} else {
+				throw err;
+			}
+		}
 
-    // Write the updated array back to the file
-    fs.writeFile(filePath, JSON.stringify(jsonArray, null, 2), 'utf8', (err) => {
-      if (err) {
-        console.error('Error writing file:', err);
-        return;
-      }
-      console.log('File updated successfully!');
-    });
-  });
-}
+		let index = jsonArray.findIndex((obj) => obj.phone === newObj.phone);
 
+		if (index !== -1) {
+			jsonArray[index] = {...jsonArray[index], ...newObj};
+			console.log(`Updated object at index ${index}`);
+		} else {
+			jsonArray.push(newObj);
+			console.log("Added new object");
+		}
+
+		await fs.writeFile(filePath, JSON.stringify(jsonArray, null, 2), "utf8");
+		console.log("File updated successfully!");
+	} catch (err) {
+		console.error("Error handling file:", err);
+	} finally {
+		await releaseLock();
+	}
+};
 exports.deleteObject = async (filePath, keyToDelete) => {
-  fs.readFile(filePath, 'utf8', (err, data) => {
-    let jsonArray = [];
+	fs.readFile(filePath, "utf8", (err, data) => {
+		let jsonArray = [];
 
-    if (err) {
-      if (err.code === 'ENOENT') {
-        console.log('File not found.');
-        return;
-      } else {
-        console.error('Error reading file:', err);
-        return;
-      }
-    } else {
-      try {
-        if (data) {
-          jsonArray = JSON.parse(data);
+		if (err) {
+			if (err.code === "ENOENT") {
+				console.log("File not found.");
+				return;
+			} else {
+				console.error("Error reading file:", err);
+				return;
+			}
+		} else {
+			try {
+				if (data) {
+					jsonArray = JSON.parse(data);
 
-          if (!Array.isArray(jsonArray)) {
-            throw new Error("JSON file does not contain an array.");
-          }
-        }
-      } catch (parseError) {
-        return;
-      }
-    }
+					if (!Array.isArray(jsonArray)) {
+						throw new Error("JSON file does not contain an array.");
+					}
+				}
+			} catch (parseError) {
+				return;
+			}
+		}
 
-    const filteredArray = jsonArray.map(obj => {
-      if (obj.hasOwnProperty(keyToDelete)) {
-        delete obj[keyToDelete];
-      }
+		const filteredArray = jsonArray.map((obj) => {
+			if (obj.hasOwnProperty(keyToDelete)) {
+				delete obj[keyToDelete];
+			}
 
-      return obj;
-    });
+			return obj;
+		});
 
-
-    fs.writeFile(filePath, JSON.stringify(filteredArray, null, 2), 'utf8', (err) => {
-      if (err) {
-        console.error('Error writing file:', err);
-        return;
-      }
-      console.log('File updated after deletion successfully!');
-    });
-  });
-}
+		fs.writeFile(
+			filePath,
+			JSON.stringify(filteredArray, null, 2),
+			"utf8",
+			(err) => {
+				if (err) {
+					console.error("Error writing file:", err);
+					return;
+				}
+				console.log("File updated after deletion successfully!");
+			},
+		);
+	});
+};
