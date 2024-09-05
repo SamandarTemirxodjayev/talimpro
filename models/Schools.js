@@ -5,6 +5,20 @@ const schoolsSchema = new Schema({
 	_id: {
 		type: Number,
 	},
+	admin: {
+		name: {
+			type: String,
+			required: true,
+		},
+		surname: {
+			type: String,
+			required: true,
+		},
+		father_name: {
+			type: String,
+			required: true,
+		},
+	},
 	number: {
 		type: String,
 		required: true,
