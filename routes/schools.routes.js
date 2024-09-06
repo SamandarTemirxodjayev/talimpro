@@ -5,8 +5,10 @@ const middleware = require("../middlewares/schools.middleware.js");
 const router = Router();
 
 router.post("/login", controller.login);
-router.get("/me",middleware, controller.getMe);
+router.get("/me", middleware, controller.getMe);
 router.post("/reset-password", middleware, controller.resetPassword);
+router.post("/profile", middleware, controller.updateSchoolProfile);
+
 router.post(
 	"/teacher/update-password/:id",
 	middleware,

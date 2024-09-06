@@ -50,9 +50,9 @@ exports.login = async (req, res) => {
 };
 exports.getMe = async (req, res) => {
 	try {
-		const {password, ...result} = req.school._doc
+		const {password, ...result} = req.school._doc;
 		return res.json({
-			data: result
+			data: result,
 		});
 	} catch (error) {
 		console.error("Error during login:", error);
@@ -81,6 +81,29 @@ exports.resetPassword = async (req, res) => {
 				token,
 				school: req.school,
 			},
+		});
+	} catch (error) {
+		console.error("Error during login:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+		});
+	}
+};
+exports.updateSchoolProfile = async (req, res) => {
+	try {
+		const school = await Schools.findByIdAndUpdate(
+			req.school.id,
+			{
+				admin: req.body,
+			},
+			{
+				new: true,
+			},
+		);
+		return res.json({
+			status: "success",
+			data: school,
 		});
 	} catch (error) {
 		console.error("Error during login:", error);
@@ -161,9 +184,9 @@ exports.getTeacherById = async (req, res) => {
 		let {password, ...result} = teacher._doc;
 
 		if (result.school) {
-      let { password, ...schoolWithoutPassword } = result.school._doc;
-      result.school = schoolWithoutPassword; // Assign the school object without password back to the result
-    }
+			let {password, ...schoolWithoutPassword} = result.school._doc;
+			result.school = schoolWithoutPassword; // Assign the school object without password back to the result
+		}
 
 		return res.status(200).json({
 			status: "success",
@@ -329,7 +352,7 @@ exports.createPupil = async (req, res) => {
 		const pupil = await Pupils.create(req.body);
 		pupil.school = req.school._id;
 		pupil.class = Class._id;
-		Class.pupils++; 
+		Class.pupils++;
 		pupil.login = `p${pupil._id}`;
 		const hashedCode = await createHash(`p${pupil._id}`);
 		pupil.password = hashedCode;
@@ -388,8 +411,9 @@ exports.getPupils = async (req, res) => {
 };
 exports.getPupilById = async (req, res) => {
 	try {
-
-		const pupil = await Pupils.findById(req.params.id).populate("school").populate("class");
+		const pupil = await Pupils.findById(req.params.id)
+			.populate("school")
+			.populate("class");
 
 		if (!pupil) {
 			return res.status(404).json({
@@ -409,7 +433,7 @@ exports.getPupilById = async (req, res) => {
 			message: "Internal Server Error",
 		});
 	}
-}
+};
 exports.deletePupil = async (req, res) => {
 	try {
 		const pupil = await Pupils.findByIdAndDelete(req.params.id);
