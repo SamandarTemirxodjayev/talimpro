@@ -6,6 +6,7 @@ const app = express();
 const routes = require("./routes/router.js");
 const path = require("path");
 const fs = require("fs");
+app.use(cors());
 
 app.use(express.json());
 
@@ -36,7 +37,6 @@ mongoose.set("debug", (collectionName, method, query, doc) => {
 	logStream.write(logMessage);
 });
 
-app.use(cors());
 
 app.listen(process.env.PORT || 3005, () => {
 	console.log(`Server listening on port ${process.env.PORT || 3005}`);

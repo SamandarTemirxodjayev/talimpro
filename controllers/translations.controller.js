@@ -1,6 +1,5 @@
 const {updateOrAddObject, deleteObject} = require("../utils/db.updater");
 const path = require("path");
-const fs = require("fs");
 const {open} = require("node:fs/promises");
 
 exports.findByLang = async (req, res) => {
