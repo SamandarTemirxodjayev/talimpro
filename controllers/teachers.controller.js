@@ -52,10 +52,10 @@ exports.login = async (req, res) => {
 };
 exports.getMe = async (req, res) => {
 	try {
-		const {password, ...result} = req.teacher._doc
+		const {password, ...result} = req.teacher._doc;
 		return res.json({
-			data: result
-		})
+			data: result,
+		});
 	} catch (error) {
 		console.error("Error during login:", error);
 		return res.status(500).json({
@@ -63,7 +63,27 @@ exports.getMe = async (req, res) => {
 			message: "Internal Server Error",
 		});
 	}
-}
+};
+exports.updateProfile = async (req, res) => {
+	try {
+		const teacher = req.teacher;
+		teacher.name = req.body.name;
+		teacher.surname = req.body.surname;
+		teacher.father_name = req.body.father_name;
+		teacher.phone_number = req.body.phone_number;
+		await teacher.save();
+		return res.json({
+			status: "success",
+			data: teacher,
+		});
+	} catch (error) {
+		console.error("Error during login:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+		});
+	}
+};
 exports.getTests = async (req, res) => {
 	try {
 		const tests = await Test.find(
