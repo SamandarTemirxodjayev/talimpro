@@ -1,4 +1,3 @@
-const {default: mongoose} = require("mongoose");
 const Schools = require("../models/Schools");
 const Teachers = require("../models/Teachers");
 const {compare, createHash} = require("../utils/codeHash");
