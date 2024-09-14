@@ -47,3 +47,46 @@ exports.login = async (req, res) => {
 		});
 	}
 };
+exports.getme = async (req, res) => {
+	try {
+		const pupil = await Pupils.findById(req.pupil._id)
+			.populate("class")
+			.populate("school")
+			.exec();
+			if (!pupil) {
+				return res.status(404).json({
+					status: "error",
+					message: "Pupil not found",
+				});
+			}
+	
+			const { password, ...result } = pupil._doc;
+			return res.json({
+				data: result,
+			});
+	} catch (error) {
+		console.error("Error during login:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+		});
+	}
+};
+
+exports.updatePupilProfile = async (req, res) => {
+	try {
+		const school = await Pupils.findByIdAndUpdate(req.pupil._id, req.body, {
+			new: true,
+		});
+		return res.json({
+			status: "success",
+			data: school,
+		});
+	} catch (error) {
+		console.error("Error during login:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+		});
+	}
+};
