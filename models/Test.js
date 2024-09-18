@@ -2,39 +2,25 @@ const mongoose = require("mongoose");
 const AutoIncrement = require("mongoose-sequence")(require("mongoose"));
 
 const testSchema = new mongoose.Schema({
+	_id: {
+		type: Number,
+	},
 	subject: {
-		type: mongoose.Types.ObjectId,
+		type: Number,
 		required: true,
 		ref: "subjects",
 	},
 	part: {
-		type: mongoose.Types.ObjectId,
+		type: Number,
 		ref: "parts",
 	},
 	theme: {
-		type: mongoose.Types.ObjectId,
+		type: Number,
 		ref: "themes",
 	},
-	banner_photo: {
-		type: String,
-		required: true,
-	},
-	type: {
-		type: String,
-		enum: ["teacher", "pupils", "user"],
-		required: true,
-	},
-	pupil_class: {
+	test_type: {
 		type: Number,
-		default: 0,
-	},
-	duration: {
-		type: Number,
-		default: 120,
-	},
-	questions_count: {
-		type: Number,
-		default: 30,
+		ref: "testtypes",
 	},
 	questions: {
 		type: [
@@ -66,10 +52,10 @@ const testSchema = new mongoose.Schema({
 });
 
 testSchema.plugin(AutoIncrement, {
-	inc_field: "test_id",
-	start_seq: 1,
+	modelName: "test",
+	fieldName: "_id",
+	startAt: 1000,
 });
-testSchema.set("timestamps", true);
 
 const Test = mongoose.model("Test", testSchema);
 
