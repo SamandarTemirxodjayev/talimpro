@@ -68,15 +68,15 @@ exports.login = async (req, res) => {
 };
 exports.getMe = async (req, res) => {
 	try {
-		const {password, ...result} = req.userId._doc
+		const {password, ...result} = req.userId._doc;
 		return res.json({
-			data: result
+			data: result,
 		});
 	} catch (error) {
-		console.log(error)
+		console.log(error);
 		return res.status(500).json({message: error});
 	}
-}
+};
 exports.createSchool = async (req, res) => {
 	try {
 		const newSchool = await Schools.create(req.body);
@@ -438,7 +438,6 @@ exports.getAllParts = async (req, res) => {
 };
 exports.getPartById = async (req, res) => {
 	try {
-
 		const part = await Parts.findById(req.params.id);
 
 		if (!part) {
@@ -567,11 +566,12 @@ exports.getAllThemes = async (req, res) => {
 };
 exports.getThemeById = async (req, res) => {
 	try {
-		const theme = await Themes.findById(req.params.id).populate("part")
-		.populate({
-			path: "part",
-			populate: [{path: "subject"}],
-		});
+		const theme = await Themes.findById(req.params.id)
+			.populate("part")
+			.populate({
+				path: "part",
+				populate: [{path: "subject"}],
+			});
 
 		if (!theme) {
 			return res.status(404).json({
@@ -732,10 +732,28 @@ exports.createType = async (req, res) => {
 };
 exports.getAllTypes = async (req, res) => {
 	try {
-		const testTypes = await TestTypes.find()
+		const testTypes = await TestTypes.find();
 		return res.status(200).json({
 			status: "success",
 			data: testTypes,
+		});
+	} catch (error) {
+		console.error("Error updating school by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
+exports.getTestTypeSubjects = async (req, res) => {
+	try {
+		const subjects = await Subjects.find({
+			test_type: req.params.id,
+		});
+		return res.status(200).json({
+			status: "success",
+			data: subjects,
 		});
 	} catch (error) {
 		console.error("Error updating school by ID:", error);
@@ -773,9 +791,13 @@ exports.getTypeById = async (req, res) => {
 
 exports.updateTypeById = async (req, res) => {
 	try {
-		const testtype = await TestTypes.findByIdAndUpdate(req.params.id, req.body, {
-			new: true,
-		});
+		const testtype = await TestTypes.findByIdAndUpdate(
+			req.params.id,
+			req.body,
+			{
+				new: true,
+			},
+		);
 		if (!testtype) {
 			return res.status(500).json({
 				status: "error",
