@@ -18,13 +18,16 @@ const testTypesSchema = new Schema(
 			type: String,
 			required: true,
 		},
-		user_types: [
-			{
-				type: String,
-				required: true,
-				enum: ["teacher", "pupils", "user"],
-			},
-		],
+		user_types: {
+			type: String,
+			required: true,
+			enum: ["teacher", "pupils", "user"],
+		},
+		test_type: {
+			type: String,
+			required: true,
+			enum: ["dtm", "school", "attestatsiya"],
+		},
 		photo_url: {
 			type: String,
 			required: true,
