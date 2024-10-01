@@ -28,7 +28,14 @@ const testTypesSchema = new Schema(
 		test_type: {
 			type: String,
 			required: true,
-			enum: ["dtm", "school", "attestatsiya"],
+			enum: [
+				"dtm",
+				"teacher_intern",
+				"attestation",
+				"school",
+				"pmtest",
+				"national_certificate",
+			],
 		},
 		photo_url: {
 			type: String,
