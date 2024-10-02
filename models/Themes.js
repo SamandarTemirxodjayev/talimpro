@@ -28,27 +28,27 @@ const themesSchema = new Schema(
 				{
 					question_text: {
 						type: String,
-						required: true,
+						// required: true,
 					},
 					options: {
 						type: [
 							{
 								text: {
 									type: String,
-									required: true,
+									// required: true,
 								},
 								is_correct: {
 									type: Boolean,
-									required: true,
+									// required: true,
 									default: false,
 								},
 							},
 						],
-						required: true,
+						// required: true,
 					},
 				},
 			],
-			required: true,
+			// required: true,
 		},
 		createdAt: {
 			type: Number,
