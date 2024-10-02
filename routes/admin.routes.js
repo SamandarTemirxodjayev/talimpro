@@ -32,6 +32,11 @@ router.post("/tests/subject", middleware, controller.createSubject);
 router.get("/tests/subjects", middleware, controller.getAllSubjects);
 router.get("/tests/subject/:id", middleware, controller.getSubjectById);
 router.put("/tests/subject/:id", middleware, controller.updateSubjectById);
+router.post(
+	"/tests/subject/:id",
+	middleware,
+	controller.getSubjectsByTestTypeId,
+);
 router.delete("/tests/subject/:id", middleware, controller.deleteSubjectById);
 
 router.post("/tests/part", middleware, controller.createPart);
@@ -50,7 +55,11 @@ router.delete("/tests/theme/:id", middleware, controller.deleteThemeById);
 
 router.post("/tests/type", middleware, controller.createType);
 router.get("/tests/types", middleware, controller.getAllTypes);
-router.get("/tests/types/subjects/:id", middleware, controller.getTestTypeSubjects);
+router.get(
+	"/tests/types/subjects/:id",
+	middleware,
+	controller.getTestTypeSubjects,
+);
 router.get("/tests/type/:id", middleware, controller.getTypeById);
 router.put("/tests/type/:id", middleware, controller.updateTypeById);
 router.delete("/tests/type/:id", middleware, controller.deleteTypeById);

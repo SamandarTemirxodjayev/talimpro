@@ -380,6 +380,24 @@ exports.updateSubjectById = async (req, res) => {
 		});
 	}
 };
+exports.getSubjectsByTestTypeId = async (req, res) => {
+	try {
+		const subjects = await Subjects.find({
+			test_type: req.params.id,
+		});
+		return res.status(200).json({
+			status: "success",
+			data: subjects,
+		});
+	} catch (error) {
+		console.error("Error updating school by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
 exports.deleteSubjectById = async (req, res) => {
 	try {
 		const subject = await Subjects.findByIdAndDelete(req.params.id);
