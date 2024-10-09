@@ -10,6 +10,7 @@ router.post("/profile", middleware, controller.updateProfile);
 router.post("/reset-password", middleware, controller.resetPassword);
 
 router.get("/testtypes", middleware, controller.getTestTypes);
+router.get("/subjects/:id", middleware, controller.getSubjects);
 router.post(
 	"/start-test/teacher_intern/:id/:subjectId",
 	middleware,

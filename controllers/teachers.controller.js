@@ -136,6 +136,28 @@ function shuffleArray(array) {
 	}
 	return array;
 }
+exports.getSubjects = async (req, res) => {
+	try {
+		const subjects = await Subjects.find({test_type: req.params.id});
+		return res.status(200).json({
+			status: "success",
+			data: subjects,
+		});
+	} catch (error) {
+		console.error("Error during login:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+		});
+	}
+};
+function shuffleArray(array) {
+	for (let i = array.length - 1; i > 0; i--) {
+		const j = Math.floor(Math.random() * (i + 1));
+		[array[i], array[j]] = [array[j], array[i]];
+	}
+	return array;
+}
 
 exports.startTestTeacherIntern = async (req, res) => {
 	const {id: testtypeId, subjectId} = req.params;
