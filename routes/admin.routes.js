@@ -26,8 +26,6 @@ router.get("/teachers", middleware, controller.getAllTeachers);
 
 router.get("/pupils", middleware, controller.getAllPupils);
 
-router.post("/tests", middleware, controller.createTest);
-
 router.post("/tests/subject", middleware, controller.createSubject);
 router.get("/tests/subjects", middleware, controller.getAllSubjects);
 router.get("/tests/subject/:id", middleware, controller.getSubjectById);

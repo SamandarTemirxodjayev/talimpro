@@ -4,7 +4,6 @@ const Schools = require("../models/Schools");
 const Subjects = require("../models/Subjects");
 const Superadmins = require("../models/Superadmins");
 const Teachers = require("../models/Teachers");
-const Test = require("../models/Test");
 const Themes = require("../models/Themes");
 const {createHash, compare} = require("../utils/codeHash");
 const {createToken, generateHashedToken} = require("../utils/token");
@@ -271,23 +270,6 @@ exports.getAllPupils = async (req, res) => {
 		return res.status(200).json({
 			status: "success",
 			data: pupils,
-		});
-	} catch (error) {
-		console.error("Error updating school by ID:", error);
-		return res.status(500).json({
-			status: "error",
-			message: "Internal Server Error",
-			error: error.message,
-		});
-	}
-};
-exports.createTest = async (req, res) => {
-	try {
-		const test = await Test.create(req.body);
-		await test.save();
-		return res.status(200).json({
-			status: "success",
-			data: test,
 		});
 	} catch (error) {
 		console.error("Error updating school by ID:", error);

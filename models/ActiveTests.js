@@ -1,88 +1,66 @@
-const {Schema, Types, model} = require("mongoose");
-const AutoIncrement = require("mongoose-sequence")(require("mongoose"));
+const {Schema, model} = require("mongoose");
+const {AutoIncrement} = require("../utils/helpers");
 
 const activeTestsSchema = new Schema({
+	_id: {
+		type: Number,
+	},
 	teacher: {
-		type: Types.ObjectId,
+		type: Number,
 		ref: "teachers",
 	},
 	pupil: {
-		type: Types.ObjectId,
+		type: Number,
 		ref: "pupils",
 	},
-	main_test_id: {
-		type: Types.ObjectId,
-		ref: "tests",
+	test_type_id: {
+		type: Number,
+		ref: "testtypes",
 	},
-	secondary_test_id: {
-		type: Types.ObjectId,
-		ref: "tests",
+	subject: {
+		type: Number,
+		ref: "subjects",
 	},
-	main_test: {
-		type: [
-			{
-				question_text: {
-					type: String,
-					required: true,
-				},
-				options: {
-					type: [
-						{
-							text: {
-								type: String,
-								required: true,
-							},
-							is_correct: {
-								type: Boolean,
-								required: true,
-								default: false,
-							},
-						},
-					],
-					required: true,
-				},
+	main_test: [
+		{
+			question_text: {
+				type: String,
+				required: true,
 			},
-		],
-		required: true,
-	},
-	secondary_test: {
-		type: [
-			{
-				question_text: {
-					type: String,
-					required: true,
+			options: [
+				{
+					text: {
+						type: String,
+						required: true,
+					},
+					is_correct: {
+						type: Boolean,
+						default: false,
+					},
+					is_selected: {
+						type: Boolean,
+						default: false,
+					},
 				},
-				options: {
-					type: [
-						{
-							text: {
-								type: String,
-								required: true,
-							},
-							is_correct: {
-								type: Boolean,
-								required: true,
-								default: false,
-							},
-						},
-					],
-					required: true,
-				},
-			},
-		],
-		required: true,
-	},
+			],
+		},
+	],
 	startedAt: {
-		type: Date,
-		required: true,
+		type: Number,
 		default: Date.now(),
+	},
+	createdAt: {
+		type: Number,
+	},
+	updatedAt: {
+		type: Number,
 	},
 });
 
 activeTestsSchema.set("timestamps", true);
 activeTestsSchema.plugin(AutoIncrement, {
-	inc_field: "active_test_id",
-	start_seq: 1,
+	modelName: "active_test_id",
+	fieldName: "_id",
 });
 
 const ActiveTests = model("activetests", activeTestsSchema);

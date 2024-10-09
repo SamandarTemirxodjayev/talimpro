@@ -9,4 +9,16 @@ router.get("/me", middleware, controller.getMe);
 router.post("/profile", middleware, controller.updateProfile);
 router.post("/reset-password", middleware, controller.resetPassword);
 
+router.get("/testtypes", middleware, controller.getTestTypes);
+router.post(
+	"/start-test/teacher_intern/:id/:subjectId",
+	middleware,
+	controller.startTestTeacherIntern,
+);
+router.post(
+	"/update-test/teacher_intern",
+	middleware,
+	controller.updateSelectedOptionOnActiveTest,
+);
+
 module.exports = router;
