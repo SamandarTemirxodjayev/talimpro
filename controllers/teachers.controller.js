@@ -229,6 +229,27 @@ exports.startTestTeacherIntern = async (req, res) => {
 		});
 	}
 };
+exports.getActiveTestTeacherIntern = async (req, res) => {
+	try {
+		const activeTest = await ActiveTests.findOne({
+			_id: req.params.id,
+			teacher: req.teacher._id,
+		})
+			.populate("teacher")
+			.populate("test_type_id")
+			.populate("subject");
+		return res.status(200).json({
+			status: "success",
+			data: activeTest,
+		});
+	} catch (error) {
+		console.error("Error during test creation:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+		});
+	}
+};
 exports.updateSelectedOptionOnActiveTest = async (req, res) => {
 	const {activeTestId, mainTestId, optionId} = req.body;
 
