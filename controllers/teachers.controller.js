@@ -163,6 +163,20 @@ exports.startTestTeacherIntern = async (req, res) => {
 	const {id: testtypeId, subjectId} = req.params;
 
 	try {
+		const activeTest = await ActiveTests.findOne({
+			teacher: req.teacher._id,
+		})
+			.populate("teacher")
+			.populate("test_type_id")
+			.populate("subject");
+
+		if (activeTest) {
+			return res.status(400).json({
+				status: "error",
+				message: "Already have active test",
+				data: activeTest,
+			});
+		}
 		// Fetch the test type
 		const testType = await TestTypes.findById(testtypeId);
 		if (!testType) {
