@@ -26,3 +26,20 @@ exports.getStatistics = async (req, res) => {
 		});
 	}
 };
+exports.getTime = async (req, res) => {
+	try {
+		return res.json({
+			status: "success",
+			data: {
+				time: Date.now(),
+			},
+		});
+	} catch (error) {
+		console.error("Error updating school by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};

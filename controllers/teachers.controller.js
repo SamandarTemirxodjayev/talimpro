@@ -443,3 +443,64 @@ exports.finishTestTeacherIntern = async (req, res) => {
 		});
 	}
 };
+exports.myAttempts = async (req, res) => {
+	try {
+		// Pagination setup
+		const page = parseInt(req.query.page) || 1; // Get page number from query, default to 1
+		const limit = parseInt(req.query.limit) || 10; // Get limit from query, default to 10
+		const skip = (page - 1) * limit; // Calculate how many documents to skip
+
+		// Fetch the total count of attempts
+		const totalAttempts = await ActiveTests.countDocuments({
+			teacher: req.teacher._id,
+		});
+
+		// Fetch paginated attempts
+		const attempts = await ActiveTests.find({
+			teacher: req.teacher._id,
+		})
+			.populate("test_type_id")
+			.populate("subject")
+			.select("-main_test") // Exclude the `main_test` field
+			.skip(skip) // Skip the appropriate number of documents
+			.limit(limit); // Limit the result to the specified amount
+
+		// Calculate total pages
+		const totalPages = Math.ceil(totalAttempts / limit);
+
+		// Construct _meta information
+		const _meta = {
+			totalItems: totalAttempts,
+			itemCount: attempts.length,
+			itemsPerPage: limit,
+			totalPages: totalPages,
+			currentPage: page,
+		};
+
+		// Construct _links for pagination navigation
+		const baseUrl = `${req.protocol}://${req.get("host")}${req.originalUrl.split("?").shift()}`; // Base URL without query parameters
+		const _links = {
+			self: `${baseUrl}?page=${page}&limit=${limit}`,
+			first: `${baseUrl}?page=1&limit=${limit}`,
+			last: `${baseUrl}?page=${totalPages}&limit=${limit}`,
+			previous: page > 1 ? `${baseUrl}?page=${page - 1}&limit=${limit}` : null,
+			next:
+				page < totalPages ? `${baseUrl}?page=${page + 1}&limit=${limit}` : null,
+		};
+
+		// Send the paginated response with _meta and _links
+		return res.status(200).json({
+			status: "success",
+			message: "success",
+			data: attempts,
+			_meta,
+			_links,
+		});
+	} catch (error) {
+		console.error("Error fetching attempts:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+		});
+	}
+};

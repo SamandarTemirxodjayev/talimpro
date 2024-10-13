@@ -31,5 +31,6 @@ router.post(
 	middleware,
 	controller.updateSelectedOptionOnActiveTest,
 );
+router.get("/attempts", middleware, controller.myAttempts);
 
 module.exports = router;
