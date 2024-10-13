@@ -32,5 +32,6 @@ router.post(
 	controller.updateSelectedOptionOnActiveTest,
 );
 router.get("/attempts", middleware, controller.myAttempts);
+router.get("/attempts/:id", middleware, controller.myAttemptgetById);
 
 module.exports = router;

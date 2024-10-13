@@ -504,3 +504,99 @@ exports.myAttempts = async (req, res) => {
 		});
 	}
 };
+exports.myAttemptgetById = async (req, res) => {
+	try {
+		// Find the active test by teacher ID and test ID
+		const attempt = await ActiveTests.findOne({
+			teacher: req.teacher._id,
+			_id: req.params.id,
+		})
+			.populate("test_type_id") // Populate test type
+			.populate("subject"); // Populate subject
+
+		if (!attempt) {
+			return res.status(404).json({
+				status: "error",
+				message: "Test attempt not found",
+			});
+		}
+
+		// Prepare a new array to hold updated questions
+		const updatedQuestions = [];
+
+		// Iterate over each question in the main_test array
+		for (let question of attempt.main_test) {
+			// Ensure that both _id values are ObjectIds
+			let questionId = question._id;
+			if (typeof questionId !== "object") {
+				questionId = new mongoose.Types.ObjectId(question._id);
+			}
+
+			// Find the corresponding theme based on the question._id
+			const theme = await Themes.findOne({
+				"questions._id": questionId, // Make sure it's ObjectId type
+			}).select("name_uz name_ru name_en part");
+
+			// Log theme query results for debugging
+
+			// Create a new question object with the existing question data
+			const updatedQuestion = {
+				...question._doc, // Use the original question data
+				theme: null, // Default theme to null
+				part: null, // Default part to null
+			};
+
+			if (theme) {
+				// Add the theme details to the question
+				updatedQuestion.theme = {
+					_id: theme._id,
+					name_uz: theme.name_uz,
+					name_ru: theme.name_ru,
+					name_en: theme.name_en,
+				};
+
+				// Find the corresponding part based on the theme's part reference
+				const part = await Parts.findOne({_id: theme.part}).select(
+					"name_uz name_ru name_en",
+				);
+
+				// Log part query results for debugging
+
+				// Add the part details to the question
+				if (part) {
+					updatedQuestion.part = {
+						_id: part._id,
+						name_uz: part.name_uz,
+						name_ru: part.name_ru,
+						name_en: part.name_en,
+					};
+				}
+			} else {
+				console.log(`No theme found for question ${question._id}`);
+			}
+
+			// Log the updated question details
+			updatedQuestions.push(updatedQuestion); // Add updated question to the array
+		}
+
+		// Assign updated questions back to the attempt
+		let newAttempt = JSON.parse(JSON.stringify(attempt));
+		newAttempt.main_test = updatedQuestions;
+		// This creates a new array that includes both
+
+		console.log(newAttempt);
+
+		// Return the response with populated questions (including theme and part)
+		return res.status(200).json({
+			status: "success",
+			message: "Test fetched successfully",
+			data: newAttempt,
+		});
+	} catch (error) {
+		console.error("Error fetching attempt:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+		});
+	}
+};
