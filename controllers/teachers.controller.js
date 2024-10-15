@@ -668,3 +668,191 @@ exports.myResults = async (req, res) => {
 		});
 	}
 };
+exports.myPartResults = async (req, res) => {
+	try {
+		// Fetch the subject by ID
+		const subject = await Subjects.findById(req.params.subjectId).populate(
+			"test_type",
+		);
+
+		if (!subject) {
+			return res.status(404).json({
+				status: "error",
+				message: "Subject not found",
+			});
+		}
+
+		// Fetch all parts related to the subject
+		const parts = await Parts.find({subject: subject._id});
+
+		// Initialize array to store part results
+		const partResults = [];
+
+		// Iterate over each part
+		for (let part of parts) {
+			let totalCorrect = 0;
+			let totalIncorrect = 0;
+			let totalQuestions = 0;
+
+			// Fetch all themes related to the current part
+			const themes = await Themes.find({part: part._id});
+
+			// Fetch all active tests related to this subject and teacher
+			const tests = await ActiveTests.find({
+				subject: subject._id,
+				teacher: req.teacher._id,
+			});
+
+			// Iterate over each test
+			for (let test of tests) {
+				for (let question of test.main_test) {
+					// Find the theme that the question belongs to
+					const theme = await Themes.findOne({
+						"questions._id": question._id,
+					}).populate("part");
+
+					// Ensure that the theme's part matches the current part
+					if (theme && theme.part._id === part._id) {
+						//my fixed place i replace theme.part to theme.part._id
+						// Check if the question was answered
+						const selectedOption = question.options.find(
+							(opt) => opt.is_selected,
+						);
+
+						if (selectedOption) {
+							// Increment the total questions count
+							totalQuestions += 1;
+
+							// Check if the selected option is correct
+							if (selectedOption.is_correct) {
+								totalCorrect += 1;
+							} else {
+								totalIncorrect += 1;
+							}
+						}
+					}
+				}
+			}
+
+			// Calculate the percentage of correct answers for this part
+			const percentageCorrect =
+				totalQuestions > 0 ? (totalCorrect / totalQuestions) * 100 : 0;
+
+			// Add the results for this part
+			partResults.push({
+				part, // You can use other language fields if needed
+				total_questions: totalQuestions,
+				total_correct: totalCorrect,
+				total_incorrect: totalIncorrect,
+				percentage_correct: percentageCorrect.toFixed(2),
+			});
+		}
+
+		// Return the part results
+		return res.status(200).json({
+			status: "success",
+			data: partResults,
+		});
+	} catch (error) {
+		console.error("Error fetching part results:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+		});
+	}
+};
+exports.getThemesResults = async (req, res) => {
+	try {
+		const {subjectId, partId} = req.params; // Assuming subjectId and partId are passed as parameters
+
+		// Fetch the subject by ID
+		const subject = await Subjects.findById(subjectId).populate("test_type");
+
+		if (!subject) {
+			return res.status(404).json({
+				status: "error",
+				message: "Subject not found",
+			});
+		}
+
+		// Fetch the part by ID
+		const part = await Parts.findById(partId);
+
+		if (!part) {
+			return res.status(404).json({
+				status: "error",
+				message: "Part not found",
+			});
+		}
+
+		// Fetch all themes related to the specific part
+		const themes = await Themes.find({part: part._id});
+
+		// Initialize array to store theme results
+		const themeResults = [];
+
+		// Fetch all active tests related to this subject and teacher
+		const tests = await ActiveTests.find({
+			subject: subject._id,
+			teacher: req.teacher._id,
+		});
+
+		// Iterate over each theme
+		for (let theme of themes) {
+			let totalCorrect = 0;
+			let totalIncorrect = 0;
+			let totalQuestions = 0;
+
+			// Iterate over each test
+			for (let test of tests) {
+				for (let question of test.main_test) {
+					// Check if the question belongs to the current theme
+					if (theme.questions.some((q) => q._id.equals(question._id))) {
+						// Check if the question was answered
+						const selectedOption = question.options.find(
+							(opt) => opt.is_selected,
+						);
+
+						if (selectedOption) {
+							// Increment the total questions count
+							totalQuestions += 1;
+
+							// Check if the selected option is correct
+							if (selectedOption.is_correct) {
+								totalCorrect += 1;
+							} else {
+								totalIncorrect += 1;
+							}
+						}
+					}
+				}
+			}
+
+			// Calculate the percentage of correct answers for this theme
+			const percentageCorrect =
+				totalQuestions > 0 ? (totalCorrect / totalQuestions) * 100 : 0;
+
+			// Add the results for this theme
+			const {questions, ...themeResultsWithoutQuestions} = theme.toObject();
+			themeResults.push({
+				theme: themeResultsWithoutQuestions, // You can use other language fields if needed
+				total_questions: totalQuestions,
+				total_correct: totalCorrect,
+				total_incorrect: totalIncorrect,
+				percentage_correct: percentageCorrect.toFixed(2),
+			});
+		}
+
+		// Return the theme results
+		return res.status(200).json({
+			status: "success",
+			data: themeResults,
+		});
+	} catch (error) {
+		console.error("Error fetching theme results:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+		});
+	}
+};

@@ -34,6 +34,12 @@ router.post(
 router.get("/attempts", middleware, controller.myAttempts);
 router.get("/attempts/:id", middleware, controller.myAttemptgetById);
 
-router.get("/results", middleware, controller.myResults)
+router.get("/results", middleware, controller.myResults);
+router.get("/results/:subjectId", middleware, controller.myPartResults);
+router.get(
+	"/results/:subjectId/:partId",
+	middleware,
+	controller.getThemesResults,
+);
 
 module.exports = router;
