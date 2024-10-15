@@ -600,3 +600,71 @@ exports.myAttemptgetById = async (req, res) => {
 		});
 	}
 };
+exports.myResults = async (req, res) => {
+	try {
+		// Fetch all subjects and populate the relevant test type field
+		const subjects = await Subjects.find().populate("test_type");
+
+		// Initialize an array to store the results for each subject
+		const subjectResults = [];
+
+		// Iterate over each subject
+		for (let subject of subjects) {
+			// Find all test attempts related to this subject
+			const tests = await ActiveTests.find({
+				subject: subject._id,
+				teacher: req.teacher._id,
+			});
+
+			let totalCorrect = 0;
+			let totalIncorrect = 0;
+			let totalQuestions = 0;
+
+			// Iterate over each test to calculate correct and incorrect answers
+			for (let test of tests) {
+				for (let question of test.main_test) {
+					// Check if the selected option exists
+					const selectedOption = question.options.find(
+						(opt) => opt.is_selected,
+					);
+					if (selectedOption) {
+						// Only count this question if a selection was made
+						totalQuestions += 1;
+
+						// Check if the selected option is correct
+						if (selectedOption.is_correct) {
+							totalCorrect += 1;
+						} else {
+							totalIncorrect += 1;
+						}
+					}
+				}
+			}
+
+			// Calculate the percentage of correct answers
+			const percentage =
+				totalQuestions > 0 ? (totalCorrect / totalQuestions) * 100 : 0;
+
+			// Add the results to the subject results array
+			subjectResults.push({
+				subject,
+				total_questions: totalQuestions,
+				total_correct: totalCorrect,
+				total_incorrect: totalIncorrect,
+				percentage_correct: percentage.toFixed(2), // Rounding to two decimal places
+			});
+		}
+
+		// Return the response with subject results
+		return res.status(200).json({
+			status: "success",
+			data: subjectResults,
+		});
+	} catch (error) {
+		console.error("Error fetching attempt:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+		});
+	}
+};

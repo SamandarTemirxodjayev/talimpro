@@ -34,4 +34,6 @@ router.post(
 router.get("/attempts", middleware, controller.myAttempts);
 router.get("/attempts/:id", middleware, controller.myAttemptgetById);
 
+router.get("/results", middleware, controller.myResults)
+
 module.exports = router;
