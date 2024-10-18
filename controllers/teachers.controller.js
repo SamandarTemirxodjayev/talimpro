@@ -6,7 +6,8 @@ const Teachers = require("../models/Teachers");
 const TestTypes = require("../models/TestTypes");
 const Themes = require("../models/Themes");
 const {compare, createHash} = require("../utils/codeHash");
-const fs = require("fs");
+const fs = require("fs").promises;
+const path = require("path");
 const {createToken} = require("../utils/token");
 
 exports.login = async (req, res) => {
@@ -151,6 +152,43 @@ exports.getSubjects = async (req, res) => {
 		});
 	}
 };
+
+exports.getSubjectsForAttestation = async (req, res) => {
+	try {
+		// Read teacher_test_id from default.json using promises
+		const data = await fs.readFile(
+			path.join(__dirname, "../database/default.json"),
+			"utf8",
+		);
+		const file = JSON.parse(data);
+
+		// Ensure file is loaded before proceeding
+		if (!file || !file.teacher_test_id) {
+			return res.status(500).json({
+				status: "error",
+				message: "Configuration error: teacher_test_id missing",
+			});
+		}
+
+		// Find subjects but exclude the one with teacher_test_id
+		const subjects = await Subjects.find({
+			test_type: req.params.id,
+			_id: {$ne: file.teacher_test_id}, // Exclude the subject with teacher_test_id
+		});
+
+		return res.status(200).json({
+			status: "success",
+			data: subjects,
+		});
+	} catch (error) {
+		console.error("Error during fetching subjects:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+		});
+	}
+};
+
 function shuffleArray(array) {
 	for (let i = array.length - 1; i > 0; i--) {
 		const j = Math.floor(Math.random() * (i + 1));
@@ -317,16 +355,19 @@ exports.startTestTeacherAttestation = async (req, res) => {
 
 		const durationMs = testType.duration * 60 * 1000; // Convert duration from minutes to milliseconds
 		const startTime = Date.now();
-		let file;
+		const data = await fs.readFile(
+			path.join(__dirname, "../database/default.json"),
+			"utf8",
+		);
+		const file = JSON.parse(data);
 
-		// Read file to get teacher_test_id (subject ID for secondary test)
-		fs.readFile("./database/default.json", "utf8", (err, data) => {
-			if (err) {
-				console.error(err);
-				return res.status(500).json({error: "Failed to read file"});
-			}
-			file = JSON.parse(data);
-		});
+		// Ensure file is loaded before proceeding
+		if (!file || !file.teacher_test_id) {
+			return res.status(500).json({
+				status: "error",
+				message: "Configuration error: teacher_test_id missing",
+			});
+		}
 
 		// Fetch the primary subject
 		const subject = await Subjects.findById(subjectId);

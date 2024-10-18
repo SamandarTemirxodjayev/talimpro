@@ -11,6 +11,11 @@ router.post("/reset-password", middleware, controller.resetPassword);
 
 router.get("/testtypes", middleware, controller.getTestTypes);
 router.get("/subjects/:id", middleware, controller.getSubjects);
+router.get(
+	"/subjects/attestation/:id",
+	middleware,
+	controller.getSubjectsForAttestation,
+);
 router.post(
 	"/start-test/teacher_intern/:id/:subjectId",
 	middleware,
