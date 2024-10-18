@@ -6,7 +6,7 @@ const Teachers = require("../models/Teachers");
 const TestTypes = require("../models/TestTypes");
 const Themes = require("../models/Themes");
 const {compare, createHash} = require("../utils/codeHash");
-const {defaultDatas, randomizeTest} = require("../utils/helpers");
+const fs = require("fs");
 const {createToken} = require("../utils/token");
 
 exports.login = async (req, res) => {
@@ -289,6 +289,175 @@ exports.startTestTeacherIntern = async (req, res) => {
 		});
 	}
 };
+exports.startTestTeacherAttestation = async (req, res) => {
+	const {id: testtypeId, subjectId} = req.params;
+
+	try {
+		// Check for an already active test for the teacher
+		const activeTest = await ActiveTests.findOne({
+			teacher: req.teacher._id,
+			status: "in-progress",
+		});
+
+		if (activeTest) {
+			return res.status(400).json({
+				status: "error",
+				message: "Already have an active test",
+				data: {
+					active_test_id: activeTest._id,
+				},
+			});
+		}
+
+		// Fetch the test type
+		const testType = await TestTypes.findById(testtypeId);
+		if (!testType) {
+			return res.status(404).json({message: "Test type not found"});
+		}
+
+		const durationMs = testType.duration * 60 * 1000; // Convert duration from minutes to milliseconds
+		const startTime = Date.now();
+		let file;
+
+		// Read file to get teacher_test_id (subject ID for secondary test)
+		fs.readFile("./database/default.json", "utf8", (err, data) => {
+			if (err) {
+				console.error(err);
+				return res.status(500).json({error: "Failed to read file"});
+			}
+			file = JSON.parse(data);
+		});
+
+		// Fetch the primary subject
+		const subject = await Subjects.findById(subjectId);
+		if (!subject) {
+			return res.status(404).json({message: "Subject not found"});
+		}
+
+		// Fetch parts and themes related to the primary subject
+		const parts = await Parts.find({subject: subjectId});
+		let primaryQuestions = [];
+
+		for (const part of parts) {
+			const themes = await Themes.find({part: part._id});
+			for (const theme of themes) {
+				if (theme.questions && theme.questions.length > 0) {
+					primaryQuestions.push(...theme.questions);
+				}
+			}
+		}
+
+		// Shuffle the primary questions and select the required amount
+		const randomizedPrimaryQuestions = shuffleArray(primaryQuestions).slice(
+			0,
+			testType.questions_count, // Take the required number of questions from the shuffled array
+		);
+
+		// Fetch secondary subject using teacher_test_id from the file
+		const secondarySubject = await Subjects.findById(file.teacher_test_id);
+		if (!secondarySubject) {
+			return res.status(404).json({message: "Secondary subject not found"});
+		}
+
+		// Fetch parts and themes related to the secondary subject
+		const secondaryParts = await Parts.find({subject: file.teacher_test_id});
+		let secondaryQuestions = [];
+
+		for (const part of secondaryParts) {
+			const themes = await Themes.find({part: part._id});
+			for (const theme of themes) {
+				if (theme.questions && theme.questions.length > 0) {
+					secondaryQuestions.push(...theme.questions);
+				}
+			}
+		}
+
+		// Shuffle the secondary questions and limit them to 10
+		const randomizedSecondaryQuestions = shuffleArray(secondaryQuestions).slice(
+			0,
+			10,
+		);
+
+		// Create a new active test with both main and secondary test
+		const newActiveTest = await ActiveTests.create({
+			teacher: req.teacher._id,
+			test_type_id: testType._id,
+			main_test: randomizedPrimaryQuestions, // Primary questions
+			secondary_test: randomizedSecondaryQuestions, // Secondary questions limited to 10
+			subject: subjectId, // Primary subject
+			subject_2: file.teacher_test_id, // Secondary subject
+			startedAt: startTime,
+			test_type: "attestation",
+			comments: req.body,
+		});
+
+		// Logic to handle test timeout
+		const timeoutId = setTimeout(async () => {
+			try {
+				// Check if the test is still active
+				const stillActive = await ActiveTests.findById(newActiveTest._id);
+				if (stillActive && stillActive.status === "in-progress") {
+					let correctAnswers = 0;
+					let wrongAnswers = 0;
+
+					// Loop through the questions and their options to calculate correct/wrong answers
+					stillActive.main_test.forEach((question) => {
+						let optionSelected = false; // Track if any option was selected for this question
+
+						question.options.forEach((option) => {
+							if (option.is_selected) {
+								optionSelected = true; // Mark that an option was selected
+								if (option.is_correct) {
+									correctAnswers++;
+								} else {
+									wrongAnswers++;
+								}
+							}
+						});
+
+						// If no option was selected for this question, consider it a wrong answer
+						if (!optionSelected) {
+							wrongAnswers++;
+						}
+					});
+
+					// Update the test with the correct and wrong answers count
+					await ActiveTests.findByIdAndUpdate(newActiveTest._id, {
+						status: "timed-out",
+						endedAt: Date.now(),
+						correct_answers: correctAnswers,
+						wrong_answers: wrongAnswers,
+					});
+
+					console.log(
+						`Test with ID ${newActiveTest._id} timed-out after ${testType.duration} minutes.`,
+					);
+					console.log(
+						`Correct Answers: ${correctAnswers}, Wrong Answers: ${wrongAnswers}`,
+					);
+				}
+			} catch (error) {
+				console.error("Error while handling timeout:", error);
+			}
+		}, durationMs);
+
+		// Store the timeout ID in case we need to cancel it later
+		newActiveTest.timeoutId = timeoutId;
+		await newActiveTest.save();
+
+		return res.status(200).json({
+			status: "success",
+			data: newActiveTest,
+		});
+	} catch (error) {
+		console.error("Error during test creation:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+		});
+	}
+};
+
 exports.getActiveTestTeacherIntern = async (req, res) => {
 	try {
 		const activeTest = await ActiveTests.findOne({

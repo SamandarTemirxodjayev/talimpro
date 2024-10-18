@@ -34,6 +34,10 @@ const activeTestsSchema = new Schema(
 			type: Number,
 			ref: "subjects",
 		},
+		subject_2: {
+			type: Number,
+			ref: "subjects",
+		},
 		total_questions: {
 			type: Number,
 		},
@@ -46,6 +50,33 @@ const activeTestsSchema = new Schema(
 			default: 0, // Tracks how many answers were wrong
 		},
 		main_test: [
+			{
+				question_text: {
+					type: String,
+					required: true,
+				},
+				options: [
+					{
+						text: {
+							type: String,
+							required: true,
+						},
+						is_correct: {
+							type: Boolean,
+							default: false,
+						},
+						is_selected: {
+							type: Boolean,
+							default: false,
+						},
+					},
+				],
+				_id: {
+					type: Types.ObjectId,
+				},
+			},
+		],
+		secondary_test: [
 			{
 				question_text: {
 					type: String,
@@ -90,6 +121,10 @@ const activeTestsSchema = new Schema(
 		},
 		score: {
 			type: Number, // Final score of the test
+		},
+		comments: {
+			attestation_type: String,
+			toifa: String,
 		},
 		status: {
 			type: String,

@@ -17,6 +17,11 @@ router.post(
 	controller.startTestTeacherIntern,
 );
 router.post(
+	"/start-test/attestation/:id/:subjectId",
+	middleware,
+	controller.startTestTeacherAttestation,
+);
+router.post(
 	"/finish-test/teacher_intern/:activeTestId",
 	middleware,
 	controller.finishTestTeacherIntern,
