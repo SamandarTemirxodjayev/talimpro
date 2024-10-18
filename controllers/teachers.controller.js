@@ -378,7 +378,6 @@ exports.startTestTeacherAttestation = async (req, res) => {
 			10,
 		);
 
-		// Create a new active test with both main and secondary test
 		const newActiveTest = await ActiveTests.create({
 			teacher: req.teacher._id,
 			test_type_id: testType._id,
