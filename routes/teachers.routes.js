@@ -32,14 +32,29 @@ router.post(
 	controller.finishTestTeacherIntern,
 );
 router.post(
+	"/finish-test/attestation/:activeTestId",
+	middleware,
+	controller.finishTestattestation,
+);
+router.post(
 	"/get-test/teacher_intern/:id",
 	middleware,
 	controller.getActiveTestTeacherIntern,
 );
 router.post(
+	"/get-test/attestation/:id",
+	middleware,
+	controller.getActiveTestattestation,
+);
+router.post(
 	"/update-test/teacher_intern",
 	middleware,
 	controller.updateSelectedOptionOnActiveTest,
+);
+router.post(
+	"/update-test/attestation",
+	middleware,
+	controller.updateSelectedOptionOnActiveTestattestation,
 );
 router.get("/attempts", middleware, controller.myAttempts);
 router.get("/attempts/:id", middleware, controller.myAttemptgetById);

@@ -460,6 +460,25 @@ exports.startTestTeacherAttestation = async (req, res) => {
 							wrongAnswers++;
 						}
 					});
+					stillActive.secondary_test.forEach((question) => {
+						let optionSelected = false; // Track if any option was selected for this question
+
+						question.options.forEach((option) => {
+							if (option.is_selected) {
+								optionSelected = true; // Mark that an option was selected
+								if (option.is_correct) {
+									correctAnswers++;
+								} else {
+									wrongAnswers++;
+								}
+							}
+						});
+
+						// If no option was selected for this question, consider it a wrong answer
+						if (!optionSelected) {
+							wrongAnswers++;
+						}
+					});
 
 					// Update the test with the correct and wrong answers count
 					await ActiveTests.findByIdAndUpdate(newActiveTest._id, {
@@ -519,7 +538,104 @@ exports.getActiveTestTeacherIntern = async (req, res) => {
 		});
 	}
 };
+exports.getActiveTestattestation = async (req, res) => {
+	try {
+		const activeTest = await ActiveTests.findOne({
+			_id: req.params.id,
+			teacher: req.teacher._id,
+		})
+			.populate("teacher")
+			.populate("test_type_id")
+			.populate("subject")
+			.populate("subject_2");
+		return res.status(200).json({
+			status: "success",
+			data: activeTest,
+		});
+	} catch (error) {
+		console.error("Error during test creation:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+		});
+	}
+};
 exports.updateSelectedOptionOnActiveTest = async (req, res) => {
+	const {activeTestId, mainTestId, optionId} = req.body;
+
+	try {
+		// Find the active test by its _id
+		const activeTest = await ActiveTests.findOne({_id: activeTestId});
+		if (!activeTest) {
+			return res
+				.status(404)
+				.json({status: "error", message: "Active test not found"});
+		}
+
+		// Check if the test is in progress, prevent editing if it's not
+		if (activeTest.status !== "in-progress") {
+			return res.status(400).json({
+				status: "error",
+				message: "Cannot update options. Test is not in progress.",
+			});
+		}
+
+		// Find the main test by main_test._id
+		if (req.body.test_type == "main") {
+			const mainTest = activeTest.main_test.id(mainTestId);
+			if (!mainTest) {
+				return res
+					.status(404)
+					.json({status: "error", message: "Main test not found"});
+			}
+
+			// Loop through the options and update the is_selected field
+			mainTest.options.forEach((option) => {
+				if (option._id.toString() === optionId) {
+					// Set the selected option to true
+					option.is_selected = true;
+				} else if (option.is_selected) {
+					// Set previously selected option to false
+					option.is_selected = false;
+				}
+			});
+		} else if (req.body.test_type == "secondary") {
+			const mainTest = activeTest.secondary_test.id(mainTestId);
+			if (!mainTest) {
+				return res
+					.status(404)
+					.json({status: "error", message: "Secondary test not found"});
+			}
+
+			// Loop through the options and update the is_selected field
+			mainTest.options.forEach((option) => {
+				if (option._id.toString() === optionId) {
+					// Set the selected option to true
+					option.is_selected = true;
+				} else if (option.is_selected) {
+					// Set previously selected option to false
+					option.is_selected = false;
+				}
+			});
+		}
+
+		// Save the updated active test document
+		await activeTest.save();
+
+		return res.status(200).json({
+			status: "success",
+			message: "Option selection updated successfully",
+			updatedTest: activeTest,
+		});
+	} catch (error) {
+		console.error("Error updating selected option:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+		});
+	}
+};
+exports.updateSelectedOptionOnActiveTestattestation = async (req, res) => {
 	const {activeTestId, mainTestId, optionId} = req.body;
 
 	try {
@@ -600,6 +716,103 @@ exports.finishTestTeacherIntern = async (req, res) => {
 
 		// Loop through the questions and count correct and wrong answers
 		activeTest.main_test.forEach((question) => {
+			let isQuestionAnswered = false; // Flag to track if a question has been answered
+
+			question.options.forEach((option) => {
+				if (option.is_selected) {
+					isQuestionAnswered = true;
+					if (option.is_correct) {
+						correctAnswers++;
+					} else {
+						wrongAnswers++;
+					}
+				}
+			});
+
+			// If no option was selected for a question, it is considered wrong
+			if (!isQuestionAnswered) {
+				wrongAnswers++;
+			}
+		});
+
+		// Mark the test as completed, update the `endedAt` timestamp
+		activeTest.endedAt = Date.now();
+		activeTest.correct_answers = correctAnswers;
+		activeTest.wrong_answers = wrongAnswers;
+		activeTest.status = "completed";
+
+		// Optional: Calculate the score based on correct answers
+		const totalQuestions = activeTest.main_test.length;
+		const score = ((correctAnswers / totalQuestions) * 100).toFixed(2); // Score as a percentage
+		activeTest.score = score;
+
+		// Save the updated test
+		await activeTest.save();
+
+		return res.status(200).json({
+			status: "success",
+			message: "Test finished successfully",
+			data: {
+				correctAnswers,
+				wrongAnswers,
+				totalQuestions,
+				score,
+				activeTest,
+			},
+		});
+	} catch (error) {
+		console.error("Error finishing test:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+		});
+	}
+};
+exports.finishTestattestation = async (req, res) => {
+	const {activeTestId} = req.params;
+
+	try {
+		// Find the active test by its ID
+		const activeTest = await ActiveTests.findOne({_id: activeTestId});
+		if (!activeTest) {
+			return res
+				.status(404)
+				.json({status: "error", message: "Active test not found"});
+		}
+
+		// Check if the test is still in progress
+		if (activeTest.status !== "in-progress") {
+			return res.status(400).json({
+				status: "error",
+				message: "Test is not in progress. Cannot finish a non-active test.",
+			});
+		}
+
+		// Variables to track correct and wrong answers
+		let correctAnswers = 0;
+		let wrongAnswers = 0;
+
+		// Loop through the questions and count correct and wrong answers
+		activeTest.main_test.forEach((question) => {
+			let isQuestionAnswered = false; // Flag to track if a question has been answered
+
+			question.options.forEach((option) => {
+				if (option.is_selected) {
+					isQuestionAnswered = true;
+					if (option.is_correct) {
+						correctAnswers++;
+					} else {
+						wrongAnswers++;
+					}
+				}
+			});
+
+			// If no option was selected for a question, it is considered wrong
+			if (!isQuestionAnswered) {
+				wrongAnswers++;
+			}
+		});
+		activeTest.secondary_test.forEach((question) => {
 			let isQuestionAnswered = false; // Flag to track if a question has been answered
 
 			question.options.forEach((option) => {
