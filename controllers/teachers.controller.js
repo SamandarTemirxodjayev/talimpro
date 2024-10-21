@@ -839,7 +839,8 @@ exports.finishTestattestation = async (req, res) => {
 		activeTest.status = "completed";
 
 		// Optional: Calculate the score based on correct answers
-		const totalQuestions = activeTest.main_test.length;
+		const totalQuestions =
+			activeTest.main_test.length + activeTest.secondary_test.length;
 		const score = ((correctAnswers / totalQuestions) * 100).toFixed(2); // Score as a percentage
 		activeTest.score = score;
 
@@ -883,6 +884,7 @@ exports.myAttempts = async (req, res) => {
 		})
 			.populate("test_type_id")
 			.populate("subject")
+			.populate("subject_2")
 			.select("-main_test") // Exclude the `main_test` field
 			.skip(skip) // Skip the appropriate number of documents
 			.limit(limit); // Limit the result to the specified amount
@@ -934,7 +936,8 @@ exports.myAttemptgetById = async (req, res) => {
 			_id: req.params.id,
 		})
 			.populate("test_type_id") // Populate test type
-			.populate("subject"); // Populate subject
+			.populate("subject") // Populate subject
+			.populate("subject_2"); // Populate secondary subject
 
 		if (!attempt) {
 			return res.status(404).json({
@@ -943,8 +946,8 @@ exports.myAttemptgetById = async (req, res) => {
 			});
 		}
 
-		// Prepare a new array to hold updated questions
-		const updatedQuestions = [];
+		// Prepare a new array to hold updated questions for main_test
+		const updatedMainQuestions = [];
 
 		// Iterate over each question in the main_test array
 		for (let question of attempt.main_test) {
@@ -958,8 +961,6 @@ exports.myAttemptgetById = async (req, res) => {
 			const theme = await Themes.findOne({
 				"questions._id": questionId, // Make sure it's ObjectId type
 			}).select("name_uz name_ru name_en part");
-
-			// Log theme query results for debugging
 
 			// Create a new question object with the existing question data
 			const updatedQuestion = {
@@ -982,8 +983,6 @@ exports.myAttemptgetById = async (req, res) => {
 					"name_uz name_ru name_en",
 				);
 
-				// Log part query results for debugging
-
 				// Add the part details to the question
 				if (part) {
 					updatedQuestion.part = {
@@ -993,20 +992,68 @@ exports.myAttemptgetById = async (req, res) => {
 						name_en: part.name_en,
 					};
 				}
-			} else {
-				console.log(`No theme found for question ${question._id}`);
 			}
 
-			// Log the updated question details
-			updatedQuestions.push(updatedQuestion); // Add updated question to the array
+			// Push the updated question to the array
+			updatedMainQuestions.push(updatedQuestion);
+		}
+
+		let updatedSecondaryQuestions = [];
+
+		// Check if test_type is "attestation", if so, handle secondary_test
+		if (attempt.test_type === "attestation") {
+			// Iterate over each question in the secondary_test array
+			for (let question of attempt.secondary_test) {
+				let questionId = question._id;
+				if (typeof questionId !== "object") {
+					questionId = new mongoose.Types.ObjectId(question._id);
+				}
+
+				const theme = await Themes.findOne({
+					"questions._id": questionId,
+				}).select("name_uz name_ru name_en part");
+
+				const updatedQuestion = {
+					...question._doc,
+					theme: null,
+					part: null,
+				};
+
+				if (theme) {
+					updatedQuestion.theme = {
+						_id: theme._id,
+						name_uz: theme.name_uz,
+						name_ru: theme.name_ru,
+						name_en: theme.name_en,
+					};
+
+					const part = await Parts.findOne({_id: theme.part}).select(
+						"name_uz name_ru name_en",
+					);
+
+					if (part) {
+						updatedQuestion.part = {
+							_id: part._id,
+							name_uz: part.name_uz,
+							name_ru: part.name_ru,
+							name_en: part.name_en,
+						};
+					}
+				}
+
+				// Push the updated question to the secondary array
+				updatedSecondaryQuestions.push(updatedQuestion);
+			}
 		}
 
 		// Assign updated questions back to the attempt
 		let newAttempt = JSON.parse(JSON.stringify(attempt));
-		newAttempt.main_test = updatedQuestions;
-		// This creates a new array that includes both
+		newAttempt.main_test = updatedMainQuestions;
 
-		console.log(newAttempt);
+		// Only assign updatedSecondaryQuestions if test_type is "attestation"
+		if (attempt.test_type === "attestation") {
+			newAttempt.secondary_test = updatedSecondaryQuestions;
+		}
 
 		// Return the response with populated questions (including theme and part)
 		return res.status(200).json({
@@ -1022,6 +1069,7 @@ exports.myAttemptgetById = async (req, res) => {
 		});
 	}
 };
+
 exports.myResults = async (req, res) => {
 	try {
 		// Fetch all subjects and populate the relevant test type field
