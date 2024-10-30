@@ -26,7 +26,7 @@ async function PupilMiddleware(req, res, next) {
 
 	try {
 		const decoded = jwt.verify(accessToken, "Samandar0321@02212006H193OC");
-		const pupil = await Pupils.findById(decoded);
+		const pupil = await Pupils.findById(decoded).populate("class");
 		if (!pupil) {
 			return res
 				.status(401)

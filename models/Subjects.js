@@ -22,6 +22,10 @@ const subjectsSchema = new Schema(
 			type: String,
 			required: true,
 		},
+		class: {
+			type: Number,
+			default: 0,
+		},
 		createdAt: {
 			type: Number,
 			default: Date.now(),

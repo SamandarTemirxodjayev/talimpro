@@ -125,6 +125,24 @@ exports.getSubjects = async (req, res) => {
 		});
 	}
 };
+exports.getSubjectsForSchool = async (req, res) => {
+	try {
+		const subjects = await Subjects.find({
+			test_type: req.params.id,
+			class: req.pupil.class.number,
+		});
+		return res.status(200).json({
+			status: "success",
+			data: subjects,
+		});
+	} catch (error) {
+		console.error("Error during login:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+		});
+	}
+};
 function shuffleArray(array) {
 	for (let i = array.length - 1; i > 0; i--) {
 		const j = Math.floor(Math.random() * (i + 1));
@@ -410,6 +428,214 @@ exports.updateSelectedOptionOnActiveTest = async (req, res) => {
 		});
 	} catch (error) {
 		console.error("Error updating selected option:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+		});
+	}
+};
+exports.startTestSchool = async (req, res) => {
+	const {id: testtypeId, subjectId} = req.params;
+
+	try {
+		// Check for an already active test for the teacher
+		const activeTest = await ActiveTests.findOne({
+			pupil: req.pupil._id,
+			status: "in-progress",
+		});
+
+		if (activeTest) {
+			return res.status(400).json({
+				status: "error",
+				message: "Already have an active test",
+				data: {
+					active_test_id: activeTest._id,
+				},
+			});
+		}
+
+		// Fetch the test type
+		const testType = await TestTypes.findById(testtypeId);
+		if (!testType) {
+			return res.status(404).json({message: "Test type not found"});
+		}
+
+		const durationMs = testType.duration * 60 * 1000; // Convert duration from minutes to milliseconds
+		const startTime = Date.now();
+
+		// Fetch the subject
+		const subject = await Subjects.findById(subjectId);
+		if (!subject) {
+			return res.status(404).json({message: "Subject not found"});
+		}
+
+		// Fetch the parts and themes related to the subject
+		const parts = await Parts.find({subject: subjectId});
+		let questions = [];
+
+		for (const part of parts) {
+			const themes = await Themes.find({part: part._id});
+			for (const theme of themes) {
+				if (theme.questions && theme.questions.length > 0) {
+					questions.push(...theme.questions);
+				}
+			}
+		}
+
+		// Shuffle the questions and take the required amount (testType.questions_count)
+		const randomizedQuestions = shuffleArray(questions).slice(
+			0,
+			testType.questions_count,
+		);
+
+		// Create a new active test
+		const newActiveTest = await ActiveTests.create({
+			pupil: req.pupil._id,
+			test_type_id: testType._id,
+			main_test: randomizedQuestions,
+			subject: subjectId,
+			startedAt: startTime,
+			test_type: "school",
+		});
+
+		// Logic to handle test timeout
+		const timeoutId = setTimeout(async () => {
+			try {
+				// Check if the test is still active
+				const stillActive = await ActiveTests.findById(newActiveTest._id);
+				if (stillActive && stillActive.status === "in-progress") {
+					let correctAnswers = 0;
+					let wrongAnswers = 0;
+
+					// Loop through the questions and their options to calculate correct/wrong answers
+					stillActive.main_test.forEach((question) => {
+						let optionSelected = false; // Track if any option was selected for this question
+
+						question.options.forEach((option) => {
+							if (option.is_selected) {
+								optionSelected = true; // Mark that an option was selected
+								if (option.is_correct) {
+									correctAnswers++;
+								} else {
+									wrongAnswers++;
+								}
+							}
+						});
+
+						// If no option was selected for this question, consider it a wrong answer
+						if (!optionSelected) {
+							wrongAnswers++;
+						}
+					});
+
+					// Update the test with the correct and wrong answers count
+					await ActiveTests.findByIdAndUpdate(newActiveTest._id, {
+						status: "timed-out",
+						endedAt: Date.now(),
+						correct_answers: correctAnswers,
+						wrong_answers: wrongAnswers,
+					});
+
+					console.log(
+						`Test with ID ${newActiveTest._id} timed-out after ${testType.duration} minutes.`,
+					);
+					console.log(
+						`Correct Answers: ${correctAnswers}, Wrong Answers: ${wrongAnswers}`,
+					);
+				}
+			} catch (error) {
+				console.error("Error while handling timeout:", error);
+			}
+		}, durationMs);
+
+		// Store the timeout ID in case we need to cancel it later
+		newActiveTest.timeoutId = timeoutId;
+		await newActiveTest.save();
+
+		return res.status(200).json({
+			status: "success",
+			data: newActiveTest,
+		});
+	} catch (error) {
+		console.error("Error during test creation:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+		});
+	}
+};
+exports.finishTestSchool = async (req, res) => {
+	const {activeTestId} = req.params;
+
+	try {
+		// Find the active test by its ID
+		const activeTest = await ActiveTests.findOne({_id: activeTestId});
+		if (!activeTest) {
+			return res
+				.status(404)
+				.json({status: "error", message: "Active test not found"});
+		}
+
+		// Check if the test is still in progress
+		if (activeTest.status !== "in-progress") {
+			return res.status(400).json({
+				status: "error",
+				message: "Test is not in progress. Cannot finish a non-active test.",
+			});
+		}
+
+		// Variables to track correct and wrong answers
+		let correctAnswers = 0;
+		let wrongAnswers = 0;
+
+		// Loop through the questions and count correct and wrong answers
+		activeTest.main_test.forEach((question) => {
+			let isQuestionAnswered = false; // Flag to track if a question has been answered
+
+			question.options.forEach((option) => {
+				if (option.is_selected) {
+					isQuestionAnswered = true;
+					if (option.is_correct) {
+						correctAnswers++;
+					} else {
+						wrongAnswers++;
+					}
+				}
+			});
+
+			// If no option was selected for a question, it is considered wrong
+			if (!isQuestionAnswered) {
+				wrongAnswers++;
+			}
+		});
+
+		// Mark the test as completed, update the `endedAt` timestamp
+		activeTest.endedAt = Date.now();
+		activeTest.correct_answers = correctAnswers;
+		activeTest.wrong_answers = wrongAnswers;
+		activeTest.status = "completed";
+
+		// Optional: Calculate the score based on correct answers
+		const totalQuestions = activeTest.main_test.length;
+		const score = ((correctAnswers / totalQuestions) * 100).toFixed(2); // Score as a percentage
+		activeTest.score = score;
+
+		// Save the updated test
+		await activeTest.save();
+
+		return res.status(200).json({
+			status: "success",
+			message: "Test finished successfully",
+			data: {
+				correctAnswers,
+				wrongAnswers,
+				totalQuestions,
+				score,
+				activeTest,
+			},
+		});
+	} catch (error) {
+		console.error("Error finishing test:", error);
 		return res.status(500).json({
 			status: "error",
 			message: "Internal Server Error",
