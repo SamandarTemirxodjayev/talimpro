@@ -10,6 +10,9 @@ const {createToken, generateHashedToken} = require("../utils/token");
 const mongoose = require("mongoose");
 const fs = require("fs");
 const TestTypes = require("../models/TestTypes");
+const Universities = require("../models/Universities");
+const {paginate} = require("../utils/helpers");
+const multer = require("multer");
 
 exports.createAdmin = async (req, res) => {
 	try {
@@ -713,6 +716,55 @@ exports.getDefaultDatas = async (req, res) => {
 		});
 	}
 };
+exports.setDefaultDatasDTM = async (req, res) => {
+	try {
+		const default_datas = req.body;
+		fs.writeFile(
+			"./database/dtm.json",
+			JSON.stringify(default_datas, null, 2),
+			(writeErr) => {
+				if (writeErr) {
+					console.error(writeErr);
+					return res.status(500).json({error: "Failed to write file"});
+				}
+
+				return res.json({
+					data: default_datas,
+					status: "success",
+				});
+			},
+		);
+	} catch (error) {
+		console.error("Error updating school by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
+exports.getDefaultDatasDTM = async (req, res) => {
+	try {
+		fs.readFile("./database/dtm.json", "utf8", (err, data) => {
+			if (err) {
+				console.error(err);
+				return res.status(500).json({error: "Failed to read file"});
+			}
+			const file = JSON.parse(data);
+			return res.json({
+				data: file,
+				status: "success",
+			});
+		});
+	} catch (error) {
+		console.error("Error updating school by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
 exports.createType = async (req, res) => {
 	try {
 		const testtype = await TestTypes.create(req.body);
@@ -841,24 +893,14 @@ exports.deleteTypeById = async (req, res) => {
 		});
 	}
 };
-exports.setDefaultDatas = async (req, res) => {
+exports.createUniversity = async (req, res) => {
 	try {
-		const default_datas = req.body;
-		fs.writeFile(
-			"./database/default.json",
-			JSON.stringify(default_datas, null, 2),
-			(writeErr) => {
-				if (writeErr) {
-					console.error(writeErr);
-					return res.status(500).json({error: "Failed to write file"});
-				}
-
-				return res.json({
-					data: default_datas,
-					status: "success",
-				});
-			},
-		);
+		const university = await Universities.create(req.body);
+		await university.save();
+		return res.status(200).json({
+			status: "success",
+			data: university,
+		});
 	} catch (error) {
 		console.error("Error updating school by ID:", error);
 		return res.status(500).json({
@@ -868,21 +910,195 @@ exports.setDefaultDatas = async (req, res) => {
 		});
 	}
 };
-exports.getDefaultDatas = async (req, res) => {
+exports.getAllUniversities = async (req, res) => {
 	try {
-		fs.readFile("./database/default.json", "utf8", (err, data) => {
-			if (err) {
-				console.error(err);
-				return res.status(500).json({error: "Failed to read file"});
-			}
-			const file = JSON.parse(data);
-			return res.json({
-				data: file,
-				status: "success",
+		let {page = 1, limit = 10} = req.query;
+		page = parseInt(page);
+		limit = parseInt(limit);
+		const skip = (page - 1) * limit;
+		let universities = await Universities.find().skip(skip).limit(limit);
+		const total = await Universities.countDocuments();
+		const response = paginate(
+			page,
+			limit,
+			total,
+			universities,
+			req.baseUrl,
+			req.path,
+		);
+
+		return res.json(response);
+	} catch (error) {
+		console.error("Error updating school by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
+exports.getUniversityById = async (req, res) => {
+	try {
+		const university = await Universities.findById(req.params.id);
+
+		if (!university) {
+			return res.status(404).json({
+				status: "fail",
+				message: "university not found",
 			});
+		}
+
+		return res.status(200).json({
+			status: "success",
+			data: university,
+		});
+	} catch (error) {
+		console.error("Error updating subject by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
+exports.updateUniversityById = async (req, res) => {
+	try {
+		const university = await Universities.findByIdAndUpdate(
+			req.params.id,
+			req.body,
+			{
+				new: true,
+			},
+		);
+		if (!university) {
+			return res.status(500).json({
+				status: "error",
+				message: "university does not exist",
+				error: null,
+			});
+		}
+		return res.status(200).json({
+			status: "success",
+			data: university,
 		});
 	} catch (error) {
 		console.error("Error updating school by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
+exports.updateSubjectsUsedirn = async (req, res) => {
+	try {
+		const {dirid, subject_1, subject_2} = req.body;
+
+		// Check if dirid or updatePayload is missing
+		if (!dirid || !subject_1 || !subject_2) {
+			return res.status(400).json({
+				status: "error",
+				message: "Missing 'dirid' or 'updatePayload' in request body",
+			});
+		}
+
+		// Update multiple documents
+		const result = await Universities.updateMany(
+			{dirid}, // Match condition
+			{subject_1, subject_2}, // Fields to update
+			{new: true}, // Return updated documents
+		);
+
+		// Check if any documents were matched and updated
+		if (result.matchedCount === 0) {
+			return res.status(404).json({
+				status: "error",
+				message: "No universities found with the given dirid",
+			});
+		}
+
+		return res.status(200).json({
+			status: "success",
+			message: "Universities updated successfully",
+			data: result,
+		});
+	} catch (error) {
+		console.error("Error updating universities by dirid:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
+exports.deleteUniversityById = async (req, res) => {
+	try {
+		const university = await Universities.findByIdAndDelete(req.params.id);
+		if (!university) {
+			return res.status(500).json({
+				status: "error",
+				message: "university does not exist",
+				error: null,
+			});
+		}
+		return res.status(200).json({
+			status: "success",
+			data: university,
+		});
+	} catch (error) {
+		console.error("Error updating school by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
+exports.uploadUniversitiesByFile = async (req, res) => {
+	try {
+		// Assuming the file is sent as `req.file` (for single file upload)
+		if (!req.file) {
+			return res.status(400).json({
+				status: "error",
+				message: "No file uploaded",
+			});
+		}
+
+		// Read the uploaded file (assuming JSON format)
+		const fileData = fs.readFileSync(req.file.path, "utf8");
+		const universities = JSON.parse(fileData);
+
+		// Validation check: Ensure the uploaded file is an array
+		if (!Array.isArray(universities)) {
+			return res.status(400).json({
+				status: "error",
+				message: "Uploaded file must contain an array of universities",
+			});
+		}
+
+		// Insert each university
+		for (const uni of universities) {
+			await Universities.create({
+				OTM: uni.OTM,
+				dirid: uni.dirid,
+				dirnm: uni.dirnm,
+				emnm: uni.emnm,
+				langnm: uni.langnm,
+				grantnm: uni.grantnm,
+				contractnm: uni.contractnm,
+				ballgr: uni.ballgr,
+				ballk: uni.ballk,
+			});
+		}
+
+		// Send response
+		return res.status(201).json({
+			status: "success",
+			message: "data uploaded successfully",
+			data: null,
+		});
+	} catch (error) {
+		console.error("Error uploading universities:", error);
 		return res.status(500).json({
 			status: "error",
 			message: "Internal Server Error",

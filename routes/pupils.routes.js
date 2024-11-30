@@ -11,6 +11,9 @@ router.post("/profile", middleware, controller.updatePupilProfile);
 router.get("/testtypes", middleware, controller.getTestTypes);
 router.get("/subjects/:id", middleware, controller.getSubjects);
 
+router.get("/universities", middleware, controller.getUniversities);
+router.patch("/facutets", middleware, controller.getFacutets);
+
 router.get("/subjects/school/:id", middleware, controller.getSubjectsForSchool);
 
 router.post(
@@ -53,5 +56,16 @@ router.post(
 	"/finish-test/school/:activeTestId",
 	middleware,
 	controller.finishTestSchool,
+);
+
+router.get("/attempts", middleware, controller.myAttempts);
+router.get("/attempts/:id", middleware, controller.myAttemptgetById);
+
+router.get("/results", middleware, controller.myResults);
+router.get("/results/:subjectId", middleware, controller.myPartResults);
+router.get(
+	"/results/:subjectId/:partId",
+	middleware,
+	controller.getThemesResults,
 );
 module.exports = router;

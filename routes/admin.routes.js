@@ -9,6 +9,8 @@ router.post("/login", controller.login);
 router.get("/me", middleware, controller.getMe);
 router.post("/default", middleware, controller.setDefaultDatas);
 router.get("/default", middleware, controller.getDefaultDatas);
+router.post("/dtm-subjects", middleware, controller.setDefaultDatasDTM);
+router.get("/dtm-subjects", middleware, controller.getDefaultDatasDTM);
 
 router.post("/school", middleware, controller.createSchool);
 router.get("/school", middleware, controller.getSchools);
@@ -61,5 +63,21 @@ router.get(
 router.get("/tests/type/:id", middleware, controller.getTypeById);
 router.put("/tests/type/:id", middleware, controller.updateTypeById);
 router.delete("/tests/type/:id", middleware, controller.deleteTypeById);
+
+router.post("/universities", middleware, controller.createUniversity);
+router.get("/universities", middleware, controller.getAllUniversities);
+router.get("/universities/:id", middleware, controller.getUniversityById);
+router.put("/universities/:id", middleware, controller.updateUniversityById);
+router.delete("/universities/:id", middleware, controller.deleteUniversityById);
+router.patch("/universities", middleware, controller.updateSubjectsUsedirn);
+const multer = require("multer");
+
+const upload = multer({dest: "uploads/"}); // Define the uploads directory
+router.patch(
+	"/universities",
+	middleware,
+	upload.single("file"),
+	controller.uploadUniversitiesByFile,
+);
 
 module.exports = router;

@@ -49,3 +49,41 @@ exports.AutoIncrement = function (schema, options) {
 		}
 	});
 };
+exports.paginate = (
+	page,
+	limit,
+	totalItems,
+	data,
+	baseUrl,
+	path,
+	additionalParams = "",
+) => {
+	const totalPages = Math.ceil(totalItems / limit);
+
+	return {
+		status: true,
+		message: "success",
+		data,
+		_meta: {
+			totalItems,
+			currentPage: page,
+			itemsPerPage: limit,
+			totalPages,
+		},
+		_links: {
+			self: `${baseUrl}${path}?page=${page}&limit=${limit}${additionalParams}`,
+			next:
+				page < totalPages
+					? `${baseUrl}${path}?page=${
+							page + 1
+						}&limit=${limit}${additionalParams}`
+					: null,
+			prev:
+				page > 1
+					? `${baseUrl}${path}?page=${
+							page - 1
+						}&limit=${limit}${additionalParams}`
+					: null,
+		},
+	};
+};
