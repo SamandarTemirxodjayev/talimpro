@@ -58,6 +58,27 @@ router.post(
 	controller.finishTestSchool,
 );
 
+router.post(
+	"/start-test/dtm/:id/:universityId",
+	middleware,
+	controller.startTestDTM,
+);
+router.post(
+	"/get-test/dtm/:id",
+	middleware,
+	controller.getActiveNationalCertificate,
+);
+router.post(
+	"/update-test/dtm",
+	middleware,
+	controller.updateSelectedOptionOnActiveTestDTM,
+);
+router.post(
+	"/finish-test/school/:activeTestId",
+	middleware,
+	controller.finishTestSchool,
+);
+
 router.get("/attempts", middleware, controller.myAttempts);
 router.get("/attempts/:id", middleware, controller.myAttemptgetById);
 

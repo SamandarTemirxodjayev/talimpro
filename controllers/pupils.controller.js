@@ -8,6 +8,7 @@ const Themes = require("../models/Themes");
 const Universities = require("../models/Universities");
 const {compare} = require("../utils/codeHash");
 const {createToken} = require("../utils/token");
+const fs = require("fs");
 
 exports.login = async (req, res) => {
 	try {
@@ -215,13 +216,16 @@ exports.getSubjectsForSchool = async (req, res) => {
 		});
 	}
 };
-function shuffleArray(array) {
+const shuffleArray = (array) => {
+	if (!Array.isArray(array)) {
+		throw new TypeError("Expected an array to shuffle.");
+	}
 	for (let i = array.length - 1; i > 0; i--) {
 		const j = Math.floor(Math.random() * (i + 1));
 		[array[i], array[j]] = [array[j], array[i]];
 	}
 	return array;
-}
+};
 exports.startTestNationalCertificate = async (req, res) => {
 	const {id: testtypeId, subjectId} = req.params;
 
@@ -438,6 +442,7 @@ exports.getActiveNationalCertificate = async (req, res) => {
 		})
 			.populate("pupil")
 			.populate("test_type_id")
+			.populate("subject_2")
 			.populate("subject");
 		return res.status(200).json({
 			status: "success",
@@ -636,6 +641,259 @@ exports.startTestSchool = async (req, res) => {
 		});
 	}
 };
+exports.finishTestSchool = async (req, res) => {
+	const {activeTestId} = req.params;
+
+	try {
+		// Find the active test by its ID
+		const activeTest = await ActiveTests.findOne({_id: activeTestId});
+		if (!activeTest) {
+			return res
+				.status(404)
+				.json({status: "error", message: "Active test not found"});
+		}
+
+		// Check if the test is still in progress
+		if (activeTest.status !== "in-progress") {
+			return res.status(400).json({
+				status: "error",
+				message: "Test is not in progress. Cannot finish a non-active test.",
+			});
+		}
+
+		// Variables to track correct and wrong answers
+		let correctAnswers = 0;
+		let wrongAnswers = 0;
+
+		// Loop through the questions and count correct and wrong answers
+		activeTest.main_test.forEach((question) => {
+			let isQuestionAnswered = false; // Flag to track if a question has been answered
+
+			question.options.forEach((option) => {
+				if (option.is_selected) {
+					isQuestionAnswered = true;
+					if (option.is_correct) {
+						correctAnswers++;
+					} else {
+						wrongAnswers++;
+					}
+				}
+			});
+
+			// If no option was selected for a question, it is considered wrong
+			if (!isQuestionAnswered) {
+				wrongAnswers++;
+			}
+		});
+
+		// Mark the test as completed, update the `endedAt` timestamp
+		activeTest.endedAt = Date.now();
+		activeTest.correct_answers = correctAnswers;
+		activeTest.wrong_answers = wrongAnswers;
+		activeTest.status = "completed";
+
+		// Optional: Calculate the score based on correct answers
+		const totalQuestions = activeTest.main_test.length;
+		const score = ((correctAnswers / totalQuestions) * 100).toFixed(2); // Score as a percentage
+		activeTest.score = score;
+
+		// Save the updated test
+		await activeTest.save();
+
+		return res.status(200).json({
+			status: "success",
+			message: "Test finished successfully",
+			data: {
+				correctAnswers,
+				wrongAnswers,
+				totalQuestions,
+				score,
+				activeTest,
+			},
+		});
+	} catch (error) {
+		console.error("Error finishing test:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+		});
+	}
+};
+exports.startTestDTM = async (req, res) => {
+	const {id: testtypeId, universityId} = req.params;
+
+	try {
+		// Check if there is already an active test
+		const activeTest = await ActiveTests.findOne({
+			pupil: req.pupil._id,
+			status: "in-progress",
+		});
+
+		if (activeTest) {
+			return res.status(400).json({
+				status: "error",
+				message: "Already have an active test",
+				data: {
+					active_test_id: activeTest._id,
+				},
+			});
+		}
+
+		// Fetch test type and validate
+		const testType = await TestTypes.findById(testtypeId);
+		if (!testType) {
+			return res.status(404).json({message: "Test type not found"});
+		}
+
+		// Fetch university and validate
+		const university = await Universities.findById(universityId);
+		if (!university) {
+			return res.status(404).json({message: "University not found"});
+		}
+
+		// Load subject IDs from `dtm.json`
+		let dtmData;
+		try {
+			dtmData = JSON.parse(fs.readFileSync("./database/dtm.json", "utf8"));
+		} catch (err) {
+			return res.status(500).json({
+				status: "error",
+				message: "Failed to load subject IDs from dtm.json.",
+			});
+		}
+
+		const {subject_1, subject_2, subject_3} = dtmData;
+
+		// Function to get questions for each subject
+		const fetchQuestionsForSubject = async (subjectId, maxCount) => {
+			// Fetch the subject and its parts
+			const parts = await Parts.find({subject: subjectId});
+
+			// Collect all questions across themes of each part
+			let questions = [];
+
+			for (const part of parts) {
+				const themes = await Themes.find({part: part._id});
+
+				// Collect questions from all themes
+				for (const theme of themes) {
+					if (theme.questions && theme.questions.length > 0) {
+						questions.push(...theme.questions);
+					}
+				}
+			}
+
+			// Shuffle and select a random subset of questions
+			return shuffleArray(questions).slice(0, maxCount);
+		};
+
+		// Fetch questions for each subject and prepare the test
+		const mainTest = []
+			.concat(await fetchQuestionsForSubject(subject_1, 10))
+			.concat(await fetchQuestionsForSubject(subject_2, 10))
+			.concat(await fetchQuestionsForSubject(subject_3, 10));
+
+		const secondaryTest = await fetchQuestionsForSubject(subject_1, 30);
+		const thirdTest = await fetchQuestionsForSubject(subject_2, 30);
+
+		// Create the active test
+		const newActiveTest = await ActiveTests.create({
+			pupil: req.pupil._id,
+			test_type_id: testType._id,
+			test_type: "dtm",
+			main_test: mainTest,
+			secondary_test: secondaryTest,
+			third_test: thirdTest,
+			startedAt: Date.now(),
+		});
+
+		return res.status(200).json({
+			status: "success",
+			message: "Test created successfully.",
+			data: newActiveTest,
+		});
+	} catch (error) {
+		console.error("Error during test creation:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
+exports.updateSelectedOptionOnActiveTestDTM = async (req, res) => {
+	const {activeTestId, section, testId, optionId} = req.body;
+
+	try {
+		// Find the active test by its _id
+		const activeTest = await ActiveTests.findOne({_id: activeTestId});
+		if (!activeTest) {
+			return res
+				.status(404)
+				.json({status: "error", message: "Active test not found"});
+		}
+
+		// Check if the test is in progress, prevent editing if it's not
+		if (activeTest.status !== "in-progress") {
+			return res.status(400).json({
+				status: "error",
+				message: "Cannot update options. Test is not in progress.",
+			});
+		}
+
+		// Select the appropriate test section based on the section parameter
+		let testSection = [];
+		if (section === "main") {
+			testSection = activeTest.main_test;
+		} else if (section === "secondary") {
+			testSection = activeTest.secondary_test;
+		} else if (section === "third") {
+			testSection = activeTest.third_test;
+		} else {
+			return res.status(400).json({
+				status: "error",
+				message:
+					"Invalid section specified. Choose from 'main', 'secondary', or 'third'.",
+			});
+		}
+
+		// Find the specific test in the selected section (main, secondary, or third)
+		const test = testSection.id(testId);
+		if (!test) {
+			return res.status(404).json({
+				status: "error",
+				message: `${section.charAt(0).toUpperCase() + section.slice(1)} test not found`,
+			});
+		}
+
+		// Loop through the options and update the is_selected field
+		test.options.forEach((option) => {
+			if (option._id.toString() === optionId) {
+				// Set the selected option to true
+				option.is_selected = true;
+			} else if (option.is_selected) {
+				// Set previously selected option to false
+				option.is_selected = false;
+			}
+		});
+
+		// Save the updated active test document
+		await activeTest.save();
+
+		return res.status(200).json({
+			status: "success",
+			message: "Option selection updated successfully",
+			updatedTest: activeTest,
+		});
+	} catch (error) {
+		console.error("Error updating selected option:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+		});
+	}
+};
+
 exports.finishTestSchool = async (req, res) => {
 	const {activeTestId} = req.params;
 

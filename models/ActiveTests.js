@@ -103,6 +103,33 @@ const activeTestsSchema = new Schema(
 				},
 			},
 		],
+		third_test: [
+			{
+				question_text: {
+					type: String,
+					required: true,
+				},
+				options: [
+					{
+						text: {
+							type: String,
+							required: true,
+						},
+						is_correct: {
+							type: Boolean,
+							default: false,
+						},
+						is_selected: {
+							type: Boolean,
+							default: false,
+						},
+					},
+				],
+				_id: {
+					type: Types.ObjectId,
+				},
+			},
+		],
 		startedAt: {
 			type: Number,
 			default: Date.now(),
