@@ -7,6 +7,7 @@ const router = Router();
 router.post("/login", controller.login);
 router.get("/me", middleware, controller.getme);
 router.post("/profile", middleware, controller.updatePupilProfile);
+router.post("/reset-password", middleware, controller.resetPassword);
 
 router.get("/testtypes", middleware, controller.getTestTypes);
 router.get("/subjects/:id", middleware, controller.getSubjects);

@@ -97,6 +97,34 @@ exports.updatePupilProfile = async (req, res) => {
 		});
 	}
 };
+exports.resetPassword = async (req, res) => {
+	try {
+		const isPasswordValid = await compare(req.body.old, req.pupil.password);
+		if (!isPasswordValid) {
+			return res.status(400).json({
+				status: "error",
+				error: "Invalid password",
+			});
+		}
+		const hashedCode = await createHash(req.body.new);
+		req.pupil.password = hashedCode;
+		await req.pupil.save();
+		const token = await createToken(req.pupil._id);
+		return res.json({
+			status: "success",
+			data: {
+				token,
+				pupil: req.pupil,
+			},
+		});
+	} catch (error) {
+		console.error("Error during login:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+		});
+	}
+};
 exports.getTestTypes = async (req, res) => {
 	try {
 		const testTypes = await TestTypes.find({user_types: {$in: ["pupils"]}});
