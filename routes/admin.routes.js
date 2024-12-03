@@ -69,7 +69,7 @@ router.get("/universities", middleware, controller.getAllUniversities);
 router.get("/universities/:id", middleware, controller.getUniversityById);
 router.put("/universities/:id", middleware, controller.updateUniversityById);
 router.delete("/universities/:id", middleware, controller.deleteUniversityById);
-router.patch("/universities", middleware, controller.updateSubjectsUsedirn);
+router.put("/universities", middleware, controller.updateSubjectsUsedirn);
 const multer = require("multer");
 
 const upload = multer({dest: "uploads/"}); // Define the uploads directory

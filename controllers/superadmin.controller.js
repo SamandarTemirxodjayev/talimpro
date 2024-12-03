@@ -1078,17 +1078,7 @@ exports.uploadUniversitiesByFile = async (req, res) => {
 
 		// Insert each university
 		for (const uni of universities) {
-			await Universities.create({
-				OTM: uni.OTM,
-				dirid: uni.dirid,
-				dirnm: uni.dirnm,
-				emnm: uni.emnm,
-				langnm: uni.langnm,
-				grantnm: uni.grantnm,
-				contractnm: uni.contractnm,
-				ballgr: uni.ballgr,
-				ballk: uni.ballk,
-			});
+			await Universities.create(uni);
 		}
 
 		// Send response
