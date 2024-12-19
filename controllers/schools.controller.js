@@ -4,6 +4,7 @@ const {compare, createHash} = require("../utils/codeHash");
 const {createToken} = require("../utils/token");
 const Classes = require("../models/Classes");
 const Pupils = require("../models/Pupils");
+const ActiveTests = require("../models/ActiveTests");
 
 exports.login = async (req, res) => {
 	try {
@@ -491,6 +492,93 @@ exports.updatePupilPassword = async (req, res) => {
 		return res.status(500).json({
 			status: "error",
 			message: "Internal Server Error",
+		});
+	}
+};
+exports.getFilteredActiveTests = async (req, res) => {
+	try {
+		const {startDate, endDate, subject, test_type_id} = req.query;
+		console.log(req.school);
+		const schoolId = req.school._id;
+
+		// Get all teachers from the school
+		const schoolTeachers = await Teachers.find({school: schoolId}).select(
+			"_id",
+		);
+		const teacherIds = schoolTeachers.map((teacher) => teacher._id);
+
+		// Build the filter object
+		const filter = {
+			teacher: {$in: teacherIds},
+			subject: subject || {$exists: true},
+			test_type_id: test_type_id || {$exists: true},
+		};
+
+		// Add date range filter if provided
+		if (startDate || endDate) {
+			filter.createdAt = {};
+			if (startDate) filter.createdAt.$gte = parseInt(startDate);
+			if (endDate) filter.createdAt.$lte = parseInt(endDate);
+		}
+
+		const activeTests = await ActiveTests.find(filter)
+			.populate("teacher")
+			.populate("subject")
+			.populate("test_type_id")
+			.sort({createdAt: -1}); // Sort by creation date, newest first
+
+		return res.status(200).json({
+			success: true,
+			data: activeTests,
+			count: activeTests.length,
+		});
+	} catch (error) {
+		return res.status(500).json({
+			success: false,
+			message: "Error fetching active tests",
+			error: error.message,
+		});
+	}
+};
+exports.getFilteredActiveTestsPupils = async (req, res) => {
+	try {
+		const {startDate, endDate, subject, test_type_id} = req.query;
+		const schoolId = req.school._id;
+
+		// Get all teachers from the school
+		const schoolTeachers = await Pupils.find({school: schoolId}).select("_id");
+		const teacherIds = schoolTeachers.map((teacher) => teacher._id);
+
+		// Build the filter object
+		const filter = {
+			pupil: {$in: teacherIds},
+			subject: subject || {$exists: true},
+			test_type_id: test_type_id || {$exists: true},
+		};
+
+		// Add date range filter if provided
+		if (startDate || endDate) {
+			filter.createdAt = {};
+			if (startDate) filter.createdAt.$gte = parseInt(startDate);
+			if (endDate) filter.createdAt.$lte = parseInt(endDate);
+		}
+
+		const activeTests = await ActiveTests.find(filter)
+			.populate("teacher")
+			.populate("subject")
+			.populate("test_type_id")
+			.sort({createdAt: -1}); // Sort by creation date, newest first
+
+		return res.status(200).json({
+			success: true,
+			data: activeTests,
+			count: activeTests.length,
+		});
+	} catch (error) {
+		return res.status(500).json({
+			success: false,
+			message: "Error fetching active tests",
+			error: error.message,
 		});
 	}
 };

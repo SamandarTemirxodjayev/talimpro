@@ -75,13 +75,15 @@ router.post(
 	controller.updateSelectedOptionOnActiveTestDTM,
 );
 router.post(
-	"/finish-test/school/:activeTestId",
+	"/finish-test/dtm/:activeTestId",
 	middleware,
-	controller.finishTestSchool,
+	controller.finishTestDTM,
 );
 
 router.get("/attempts", middleware, controller.myAttempts);
 router.get("/attempts/:id", middleware, controller.myAttemptgetById);
+
+router.patch("/universities", middleware, controller.CompareUniversities);
 
 router.get("/results", middleware, controller.myResults);
 router.get("/results/:subjectId", middleware, controller.myPartResults);

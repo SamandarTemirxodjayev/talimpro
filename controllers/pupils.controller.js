@@ -161,9 +161,13 @@ exports.getUniversities = async (req, res) => {
 
 		// Validate the input
 		if (!search) {
-			return res.status(400).json({
-				status: "error",
-				message: "Search query parameter is required",
+			const universities = await Universities.find()
+				.populate("subject_1")
+				.populate("subject_2");
+			return res.json({
+				status: "success",
+				message: "success",
+				data: universities,
 			});
 		}
 
@@ -300,6 +304,11 @@ exports.startTestNationalCertificate = async (req, res) => {
 					questions.push(...theme.questions);
 				}
 			}
+		}
+		if (questions <= testType.questions_count) {
+			return res.status(400).json({
+				message: "not have questions",
+			});
 		}
 
 		// Shuffle the questions and take the required amount (testType.questions_count)
@@ -586,6 +595,11 @@ exports.startTestSchool = async (req, res) => {
 				}
 			}
 		}
+		if (questions.length <= testType.questions_count) {
+			return res.status(400).json({
+				message: "not have questions",
+			});
+		}
 
 		// Shuffle the questions and take the required amount (testType.questions_count)
 		const randomizedQuestions = shuffleArray(questions).slice(
@@ -772,6 +786,8 @@ exports.startTestDTM = async (req, res) => {
 		if (!testType) {
 			return res.status(404).json({message: "Test type not found"});
 		}
+		const durationMs = testType.duration * 60 * 1000; // Convert duration from minutes to milliseconds
+		const startTime = Date.now();
 
 		// Fetch university and validate
 		const university = await Universities.findById(universityId);
@@ -824,6 +840,22 @@ exports.startTestDTM = async (req, res) => {
 		const secondaryTest = await fetchQuestionsForSubject(subject_1, 30);
 		const thirdTest = await fetchQuestionsForSubject(subject_2, 30);
 
+		if (mainTest.length <= 30) {
+			return res.status(400).json({
+				message: "not have questions",
+			});
+		}
+		if (secondaryTest.length <= 30) {
+			return res.status(400).json({
+				message: "not have questions",
+			});
+		}
+		if (thirdTest.length <= 30) {
+			return res.status(400).json({
+				message: "not have questions",
+			});
+		}
+
 		// Create the active test
 		const newActiveTest = await ActiveTests.create({
 			pupil: req.pupil._id,
@@ -834,6 +866,102 @@ exports.startTestDTM = async (req, res) => {
 			third_test: thirdTest,
 			startedAt: Date.now(),
 		});
+		const timeoutId = setTimeout(async () => {
+			try {
+				// Check if the test is still active
+				const stillActive = await ActiveTests.findById(newActiveTest._id);
+				if (stillActive && stillActive.status === "in-progress") {
+					let correctAnswers = 0;
+					let wrongAnswers = 0;
+					let score = 0;
+
+					// Loop through the questions and their options to calculate correct/wrong answers
+					stillActive.main_test.forEach((question) => {
+						let optionSelected = false; // Track if any option was selected for this question
+
+						question.options.forEach((option) => {
+							if (option.is_selected) {
+								optionSelected = true; // Mark that an option was selected
+								if (option.is_correct) {
+									correctAnswers++;
+									score += 1.1;
+								} else {
+									wrongAnswers++;
+								}
+							}
+						});
+
+						// If no option was selected for this question, consider it a wrong answer
+						if (!optionSelected) {
+							wrongAnswers++;
+						}
+					});
+
+					stillActive.secondary_test.forEach((question) => {
+						let optionSelected = false; // Track if any option was selected for this question
+
+						question.options.forEach((option) => {
+							if (option.is_selected) {
+								optionSelected = true; // Mark that an option was selected
+								if (option.is_correct) {
+									correctAnswers++;
+									score += 2.1;
+								} else {
+									wrongAnswers++;
+								}
+							}
+						});
+
+						// If no option was selected for this question, consider it a wrong answer
+						if (!optionSelected) {
+							wrongAnswers++;
+						}
+					});
+
+					stillActive.third_test.forEach((question) => {
+						let optionSelected = false; // Track if any option was selected for this question
+
+						question.options.forEach((option) => {
+							if (option.is_selected) {
+								optionSelected = true; // Mark that an option was selected
+								if (option.is_correct) {
+									correctAnswers++;
+									score += 3.1;
+								} else {
+									wrongAnswers++;
+								}
+							}
+						});
+
+						// If no option was selected for this question, consider it a wrong answer
+						if (!optionSelected) {
+							wrongAnswers++;
+						}
+					});
+
+					// Update the test with the correct and wrong answers count
+					await ActiveTests.findByIdAndUpdate(newActiveTest._id, {
+						status: "timed-out",
+						endedAt: Date.now(),
+						correct_answers: correctAnswers,
+						wrong_answers: wrongAnswers,
+					});
+
+					console.log(
+						`Test with ID ${newActiveTest._id} timed-out after ${testType.duration} minutes.`,
+					);
+					console.log(
+						`Correct Answers: ${correctAnswers}, Wrong Answers: ${wrongAnswers}`,
+					);
+				}
+			} catch (error) {
+				console.error("Error while handling timeout:", error);
+			}
+		}, durationMs);
+
+		// Store the timeout ID in case we need to cancel it later
+		newActiveTest.timeoutId = timeoutId;
+		await newActiveTest.save();
 
 		return res.status(200).json({
 			status: "success",
@@ -922,7 +1050,7 @@ exports.updateSelectedOptionOnActiveTestDTM = async (req, res) => {
 	}
 };
 
-exports.finishTestSchool = async (req, res) => {
+exports.finishTestDTM = async (req, res) => {
 	const {activeTestId} = req.params;
 
 	try {
@@ -945,24 +1073,68 @@ exports.finishTestSchool = async (req, res) => {
 		// Variables to track correct and wrong answers
 		let correctAnswers = 0;
 		let wrongAnswers = 0;
+		let score = 0;
 
 		// Loop through the questions and count correct and wrong answers
-		activeTest.main_test.forEach((question) => {
-			let isQuestionAnswered = false; // Flag to track if a question has been answered
+		stillActive.main_test.forEach((question) => {
+			let optionSelected = false; // Track if any option was selected for this question
 
 			question.options.forEach((option) => {
 				if (option.is_selected) {
-					isQuestionAnswered = true;
+					optionSelected = true; // Mark that an option was selected
 					if (option.is_correct) {
 						correctAnswers++;
+						score += 1.1;
 					} else {
 						wrongAnswers++;
 					}
 				}
 			});
 
-			// If no option was selected for a question, it is considered wrong
-			if (!isQuestionAnswered) {
+			// If no option was selected for this question, consider it a wrong answer
+			if (!optionSelected) {
+				wrongAnswers++;
+			}
+		});
+
+		stillActive.secondary_test.forEach((question) => {
+			let optionSelected = false; // Track if any option was selected for this question
+
+			question.options.forEach((option) => {
+				if (option.is_selected) {
+					optionSelected = true; // Mark that an option was selected
+					if (option.is_correct) {
+						correctAnswers++;
+						score += 2.1;
+					} else {
+						wrongAnswers++;
+					}
+				}
+			});
+
+			// If no option was selected for this question, consider it a wrong answer
+			if (!optionSelected) {
+				wrongAnswers++;
+			}
+		});
+
+		stillActive.third_test.forEach((question) => {
+			let optionSelected = false; // Track if any option was selected for this question
+
+			question.options.forEach((option) => {
+				if (option.is_selected) {
+					optionSelected = true; // Mark that an option was selected
+					if (option.is_correct) {
+						correctAnswers++;
+						score += 3.1;
+					} else {
+						wrongAnswers++;
+					}
+				}
+			});
+
+			// If no option was selected for this question, consider it a wrong answer
+			if (!optionSelected) {
 				wrongAnswers++;
 			}
 		});
@@ -974,8 +1146,8 @@ exports.finishTestSchool = async (req, res) => {
 		activeTest.status = "completed";
 
 		// Optional: Calculate the score based on correct answers
-		const totalQuestions = activeTest.main_test.length;
-		const score = ((correctAnswers / totalQuestions) * 100).toFixed(2); // Score as a percentage
+		const totalQuestions = 90;
+		// const score = ((correctAnswers / totalQuestions) * 100).toFixed(2); // Score as a percentage
 		activeTest.score = score;
 
 		// Save the updated test
@@ -1175,21 +1347,17 @@ exports.myAttemptgetById = async (req, res) => {
 					}
 				}
 
-				// Push the updated question to the secondary array
 				updatedSecondaryQuestions.push(updatedQuestion);
 			}
 		}
 
-		// Assign updated questions back to the attempt
 		let newAttempt = JSON.parse(JSON.stringify(attempt));
 		newAttempt.main_test = updatedMainQuestions;
 
-		// Only assign updatedSecondaryQuestions if test_type is "attestation"
 		if (attempt.test_type === "attestation") {
 			newAttempt.secondary_test = updatedSecondaryQuestions;
 		}
 
-		// Return the response with populated questions (including theme and part)
 		return res.status(200).json({
 			status: "success",
 			message: "Test fetched successfully",
@@ -1203,17 +1371,32 @@ exports.myAttemptgetById = async (req, res) => {
 		});
 	}
 };
+exports.CompareUniversities = async (req, res) => {
+	try {
+		const university = await Universities.find(req.body);
+		return res.json({
+			status: "success",
+			message: "success",
+			data: university,
+		});
+	} catch (error) {
+		console.error("Error fetching attempt:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+		});
+	}
+};
 exports.myResults = async (req, res) => {
 	try {
-		// Fetch all subjects and populate the relevant test type field
-		const subjects = await Subjects.find().populate("test_type");
+		const {testtype} = req.query;
+		const subjects = await Subjects.find({test_type: testtype}).populate(
+			"test_type",
+		);
 
-		// Initialize an array to store the results for each subject
 		const subjectResults = [];
 
-		// Iterate over each subject
 		for (let subject of subjects) {
-			// Find all test attempts related to this subject
 			const tests = await ActiveTests.find({
 				subject: subject._id,
 				pupil: req.pupil._id,
@@ -1223,7 +1406,6 @@ exports.myResults = async (req, res) => {
 			let totalIncorrect = 0;
 			let totalQuestions = 0;
 
-			// Iterate over each test to calculate correct and incorrect answers
 			for (let test of tests) {
 				for (let question of test.main_test) {
 					// Check if the selected option exists

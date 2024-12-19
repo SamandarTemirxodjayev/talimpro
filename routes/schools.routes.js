@@ -38,4 +38,7 @@ router.post(
 	controller.updatePupilPassword,
 );
 
+router.patch("/teachers", middleware, controller.getFilteredActiveTests);
+router.patch("/pupils", middleware, controller.getFilteredActiveTestsPupils);
+
 module.exports = router;

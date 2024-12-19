@@ -29,7 +29,7 @@ exports.login = async (req, res) => {
 		}
 		const school = await Schools.findById(teacher.school);
 
-		const currentDate = new Date();
+		const currentDate = +new Date();
 		if (!school.tarif || school.tarif < currentDate) {
 			return res.status(400).json({
 				status: "error",
@@ -244,6 +244,11 @@ exports.startTestTeacherIntern = async (req, res) => {
 				}
 			}
 		}
+		if (questions.length <= testType.questions_count) {
+			return res.status(400).json({
+				message: "not have questions",
+			});
+		}
 
 		// Shuffle the questions and take the required amount (testType.questions_count)
 		const randomizedQuestions = shuffleArray(questions).slice(
@@ -387,6 +392,11 @@ exports.startTestTeacherAttestation = async (req, res) => {
 				}
 			}
 		}
+		if (primaryQuestions.length <= testType.questions_count) {
+			return res.status(400).json({
+				message: "not have questions",
+			});
+		}
 
 		// Shuffle the primary questions and select the required amount
 		const randomizedPrimaryQuestions = shuffleArray(primaryQuestions).slice(
@@ -410,6 +420,11 @@ exports.startTestTeacherAttestation = async (req, res) => {
 				if (theme.questions && theme.questions.length > 0) {
 					secondaryQuestions.push(...theme.questions);
 				}
+			}
+			if (secondaryQuestions.length <= 10) {
+				return res.status(400).json({
+					message: "not have questions",
+				});
 			}
 		}
 
@@ -1069,11 +1084,13 @@ exports.myAttemptgetById = async (req, res) => {
 		});
 	}
 };
-
 exports.myResults = async (req, res) => {
 	try {
+		const {testtype} = req.query;
 		// Fetch all subjects and populate the relevant test type field
-		const subjects = await Subjects.find().populate("test_type");
+		const subjects = await Subjects.find({test_type: testtype}).populate(
+			"test_type",
+		);
 
 		// Initialize an array to store the results for each subject
 		const subjectResults = [];
