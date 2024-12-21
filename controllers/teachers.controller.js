@@ -244,11 +244,11 @@ exports.startTestTeacherIntern = async (req, res) => {
 				}
 			}
 		}
-		if (questions.length <= testType.questions_count) {
-			return res.status(400).json({
-				message: "not have questions",
-			});
-		}
+		// if (questions.length <= testType.questions_count) {
+		// 	return res.status(400).json({
+		// 		message: "not have questions",
+		// 	});
+		// }
 
 		// Shuffle the questions and take the required amount (testType.questions_count)
 		const randomizedQuestions = shuffleArray(questions).slice(
@@ -392,7 +392,7 @@ exports.startTestTeacherAttestation = async (req, res) => {
 				}
 			}
 		}
-		if (primaryQuestions.length <= testType.questions_count) {
+		if (primaryQuestions.length < testType.questions_count) {
 			return res.status(400).json({
 				message: "not have questions",
 			});
@@ -421,7 +421,7 @@ exports.startTestTeacherAttestation = async (req, res) => {
 					secondaryQuestions.push(...theme.questions);
 				}
 			}
-			if (secondaryQuestions.length <= 10) {
+			if (secondaryQuestions.length < 10) {
 				return res.status(400).json({
 					message: "not have questions",
 				});
