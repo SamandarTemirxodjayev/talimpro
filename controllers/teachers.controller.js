@@ -393,6 +393,7 @@ exports.startTestTeacherAttestation = async (req, res) => {
 			}
 		}
 		if (primaryQuestions.length < testType.questions_count) {
+			console.log(primaryQuestions.length);
 			return res.status(400).json({
 				message: "not have questions",
 			});
@@ -422,6 +423,7 @@ exports.startTestTeacherAttestation = async (req, res) => {
 				}
 			}
 			if (secondaryQuestions.length < 10) {
+				console.log(secondaryQuestions.length);
 				return res.status(400).json({
 					message: "not have questions",
 				});
