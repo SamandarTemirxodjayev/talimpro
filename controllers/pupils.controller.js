@@ -159,39 +159,35 @@ exports.getUniversities = async (req, res) => {
 	try {
 		const {search} = req.query;
 
-		// Validate the input
-		if (!search) {
-			const universities = await Universities.find()
-				.populate("subject_1")
-				.populate("subject_2");
-			return res.json({
-				status: "success",
-				message: "success",
-				data: universities,
+		// Base aggregation pipeline
+		const pipeline = [
+			{
+				$group: {
+					_id: "$OTM", // Group by OTM
+					anyUniversity: {$first: "$$ROOT"}, // Take the first entry per group
+				},
+			},
+			{
+				$replaceRoot: {newRoot: "$anyUniversity"}, // Flatten the grouped documents
+			},
+			{
+				$sort: {OTM: 1}, // Optional: Sort by OTM
+			},
+		];
+
+		// Add search filter if a search query is provided
+		if (search) {
+			pipeline.unshift({
+				$match: {
+					OTM: {$regex: search.trim(), $options: "i"}, // Case-insensitive search
+				},
 			});
 		}
 
-		console.log("Search query received:", search);
+		// Execute the aggregation pipeline
+		const universities = await Universities.aggregate(pipeline);
 
-		// Search and group by OTM to avoid duplicates
-		const universities = await Universities.aggregate([
-			{
-				$match: {
-					OTM: {$regex: search.trim(), $options: "i"}, // Case-insensitive partial search
-				},
-			},
-			{
-				$group: {
-					_id: "$OTM",
-					anyUniversity: {$first: "$$ROOT"}, // Select one document per group
-				},
-			},
-			{
-				$replaceRoot: {newRoot: "$anyUniversity"}, // Replace root with grouped document
-			},
-		]);
-
-		console.log("Universities found:", universities);
+		console.log("Unique universities found:", universities);
 
 		// Handle no results
 		if (!universities.length) {
@@ -203,16 +199,18 @@ exports.getUniversities = async (req, res) => {
 
 		return res.status(200).json({
 			status: "success",
+			message: "Unique universities fetched successfully",
 			data: universities,
 		});
 	} catch (error) {
-		console.error("Error during university search:", error);
+		console.error("Error during university retrieval:", error);
 		return res.status(500).json({
 			status: "error",
 			message: "Internal Server Error",
 		});
 	}
 };
+
 exports.getFacutets = async (req, res) => {
 	try {
 		const facutets = await Universities.find(req.body)
