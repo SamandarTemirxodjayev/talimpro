@@ -484,6 +484,32 @@ exports.getSubjectById = async (req, res) => {
 		});
 	}
 };
+exports.getSubjectByClassNumber = async (req, res) => {
+	try {
+		const subject = await Subjects.find({
+			class: req.params.id,
+		});
+
+		if (!subject) {
+			return res.status(404).json({
+				status: "fail",
+				message: "subject not found",
+			});
+		}
+
+		return res.status(200).json({
+			status: "success",
+			data: subject,
+		});
+	} catch (error) {
+		console.error("Error updating subject by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
 exports.updateSubjectById = async (req, res) => {
 	try {
 		const subject = await Subjects.findByIdAndUpdate(req.params.id, req.body, {

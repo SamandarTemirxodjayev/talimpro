@@ -35,6 +35,11 @@ router.patch("/pupils/:id", middleware, controller.getPupilsTests);
 router.post("/tests/subject", middleware, controller.createSubject);
 router.get("/tests/subjects", middleware, controller.getAllSubjects);
 router.get("/tests/subject/:id", middleware, controller.getSubjectById);
+router.patch(
+	"/tests/subjects/:id",
+	middleware,
+	controller.getSubjectByClassNumber,
+);
 router.put("/tests/subject/:id", middleware, controller.updateSubjectById);
 router.post(
 	"/tests/subject/:id",

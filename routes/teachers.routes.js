@@ -54,7 +54,7 @@ router.post(
 router.post(
 	"/update-test/attestation",
 	middleware,
-	controller.updateSelectedOptionOnActiveTestattestation,
+	controller.updateSelectedOptionOnActiveTest,
 );
 router.get("/attempts", middleware, controller.myAttempts);
 router.get("/attempts/:id", middleware, controller.myAttemptgetById);
