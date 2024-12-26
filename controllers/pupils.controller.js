@@ -230,6 +230,7 @@ exports.getFacutets = async (req, res) => {
 };
 exports.getSubjectsForSchool = async (req, res) => {
 	try {
+		console.log(req.pupil.class.number);
 		const subjects = await Subjects.find({
 			test_type: req.params.id,
 			class: req.pupil.class.number,
@@ -840,17 +841,18 @@ exports.startTestDTM = async (req, res) => {
 
 		if (mainTest.length <= 30) {
 			return res.status(400).json({
-				message: "not have questions",
+				message: "not have questions on maintest total count " + mainTest.length,
 			});
 		}
 		if (secondaryTest.length <= 30) {
 			return res.status(400).json({
-				message: "not have questions",
+				message: "not have questions on secondary test total count " + secondaryTest.length,
 			});
 		}
 		if (thirdTest.length <= 30) {
 			return res.status(400).json({
-				message: "not have questions",
+				message: "not have questions on third test total count " + thirdTest.length,
+				
 			});
 		}
 
