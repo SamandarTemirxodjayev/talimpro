@@ -304,7 +304,7 @@ exports.startTestNationalCertificate = async (req, res) => {
 				}
 			}
 		}
-		if (questions <= testType.questions_count) {
+		if (questions < testType.questions_count) {
 			return res.status(400).json({
 				message: "not have questions",
 			});
@@ -594,7 +594,7 @@ exports.startTestSchool = async (req, res) => {
 				}
 			}
 		}
-		if (questions.length <= testType.questions_count) {
+		if (questions.length < testType.questions_count) {
 			return res.status(400).json({
 				message: "not have questions",
 			});
@@ -839,20 +839,20 @@ exports.startTestDTM = async (req, res) => {
 		const secondaryTest = await fetchQuestionsForSubject(subject_1, 30);
 		const thirdTest = await fetchQuestionsForSubject(subject_2, 30);
 
-		if (mainTest.length <= 30) {
+		if (mainTest.length < 30) {
 			return res.status(400).json({
 				message: "not have questions on maintest total count " + mainTest.length,
 			});
 		}
-		if (secondaryTest.length <= 30) {
+		if (secondaryTest.length < 30) {
 			return res.status(400).json({
 				message: "not have questions on secondary test total count " + secondaryTest.length,
 			});
 		}
-		if (thirdTest.length <= 30) {
+		if (thirdTest.length < 30) {
 			return res.status(400).json({
 				message: "not have questions on third test total count " + thirdTest.length,
-				
+
 			});
 		}
 
