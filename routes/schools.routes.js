@@ -40,5 +40,7 @@ router.post(
 
 router.patch("/teachers", middleware, controller.getFilteredActiveTests);
 router.patch("/pupils", middleware, controller.getFilteredActiveTestsPupils);
+router.get("/tests/types", middleware, controller.getAllTypes);
+router.get("/subjects", middleware, controller.getAllSubjects);
 
 module.exports = router;

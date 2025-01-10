@@ -5,6 +5,8 @@ const {createToken} = require("../utils/token");
 const Classes = require("../models/Classes");
 const Pupils = require("../models/Pupils");
 const ActiveTests = require("../models/ActiveTests");
+const TestTypes = require("../models/TestTypes");
+const Subjects = require("../models/Subjects");
 
 exports.login = async (req, res) => {
 	try {
@@ -578,6 +580,39 @@ exports.getFilteredActiveTestsPupils = async (req, res) => {
 		return res.status(500).json({
 			success: false,
 			message: "Error fetching active tests",
+			error: error.message,
+		});
+	}
+};
+exports.getAllTypes = async (req, res) => {
+	try {
+		const testTypes = await TestTypes.find();
+		return res.status(200).json({
+			status: "success",
+			data: testTypes,
+		});
+	} catch (error) {
+		console.error("Error updating school by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
+exports.getAllSubjects = async (req, res) => {
+	try {
+		const {filter = {}} = req.query;
+		const subjects = await Subjects.find({...filter});
+		return res.status(200).json({
+			status: "success",
+			data: subjects,
+		});
+	} catch (error) {
+		console.error("Error updating school by ID:", error);
+		return res.status(500).json({
+			status: "error",
+			message: "Internal Server Error",
 			error: error.message,
 		});
 	}

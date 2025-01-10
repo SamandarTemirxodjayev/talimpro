@@ -6,7 +6,7 @@ const Subjects = require("../models/Subjects");
 const TestTypes = require("../models/TestTypes");
 const Themes = require("../models/Themes");
 const Universities = require("../models/Universities");
-const {compare} = require("../utils/codeHash");
+const {compare, createHash} = require("../utils/codeHash");
 const {createToken} = require("../utils/token");
 const fs = require("fs");
 
@@ -836,8 +836,8 @@ exports.startTestDTM = async (req, res) => {
 			.concat(await fetchQuestionsForSubject(subject_2, 10))
 			.concat(await fetchQuestionsForSubject(subject_3, 10));
 
-		const secondaryTest = await fetchQuestionsForSubject(subject_1, 30);
-		const thirdTest = await fetchQuestionsForSubject(subject_2, 30);
+		const secondaryTest = await fetchQuestionsForSubject(university.subject_1, 30);
+		const thirdTest = await fetchQuestionsForSubject(university.subject_2, 30);
 
 		if (mainTest.length < 30) {
 			return res.status(400).json({
@@ -862,6 +862,8 @@ exports.startTestDTM = async (req, res) => {
 			test_type_id: testType._id,
 			test_type: "dtm",
 			main_test: mainTest,
+			subject: university.subject_1,
+			subject_2: university.subject_2,
 			secondary_test: secondaryTest,
 			third_test: thirdTest,
 			startedAt: Date.now(),
@@ -1076,7 +1078,7 @@ exports.finishTestDTM = async (req, res) => {
 		let score = 0;
 
 		// Loop through the questions and count correct and wrong answers
-		stillActive.main_test.forEach((question) => {
+		activeTest.main_test.forEach((question) => {
 			let optionSelected = false; // Track if any option was selected for this question
 
 			question.options.forEach((option) => {
@@ -1097,7 +1099,7 @@ exports.finishTestDTM = async (req, res) => {
 			}
 		});
 
-		stillActive.secondary_test.forEach((question) => {
+		activeTest.secondary_test.forEach((question) => {
 			let optionSelected = false; // Track if any option was selected for this question
 
 			question.options.forEach((option) => {
@@ -1118,7 +1120,7 @@ exports.finishTestDTM = async (req, res) => {
 			}
 		});
 
-		stillActive.third_test.forEach((question) => {
+		activeTest.third_test.forEach((question) => {
 			let optionSelected = false; // Track if any option was selected for this question
 
 			question.options.forEach((option) => {
