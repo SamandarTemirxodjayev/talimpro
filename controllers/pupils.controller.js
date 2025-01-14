@@ -862,6 +862,7 @@ exports.startTestDTM = async (req, res) => {
 			test_type_id: testType._id,
 			test_type: "dtm",
 			main_test: mainTest,
+			dtm_university_id: university._id,
 			subject: university.subject_1,
 			subject_2: university.subject_2,
 			secondary_test: secondaryTest,

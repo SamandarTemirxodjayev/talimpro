@@ -26,6 +26,10 @@ const activeTestsSchema = new Schema(
 				"national_certificate",
 			],
 		},
+		dtm_university_id: {
+			type: Number,
+			ref: "university"
+		},
 		test_type_id: {
 			type: Number,
 			ref: "testtypes",
